@@ -1,0 +1,10 @@
+[
+  { "id": "bracer", "name": "Bracer", "description": "+10% Attack Speed", "cost": 15, "statModifiers": { "attackSpeed": 0.1 }, "maxStack": 5, "rarity": "common", "icon": "item_bracer" },
+  { "id": "hollow_heart", "name": "Hollow Heart", "description": "+20 Max HP", "cost": 10, "statModifiers": { "maxHp": 20 }, "maxStack": 5, "rarity": "common", "icon": "item_heart" },
+  { "id": "spinach", "name": "Spinach", "description": "+10% Damage", "cost": 15, "statModifiers": { "damage": 0.1 }, "maxStack": 5, "rarity": "common", "icon": "item_spinach" },
+  { "id": "wings", "name": "Wings", "description": "+10 Speed", "cost": 10, "statModifiers": { "speed": 10 }, "maxStack": 5, "rarity": "common", "icon": "item_wings" },
+  { "id": "armor", "name": "Armor", "description": "+1 Armor", "cost": 20, "statModifiers": { "armor": 1 }, "maxStack": 5, "rarity": "uncommon", "icon": "item_armor" },
+  { "id": "magnet", "name": "Magnet", "description": "+20 Pickup Range", "cost": 10, "statModifiers": { "pickupRange": 20 }, "maxStack": 3, "rarity": "common", "icon": "item_magnet" },
+  { "id": "clover", "name": "Clover", "description": "+10% Luck", "cost": 15, "statModifiers": { "luck": 0.1 }, "maxStack": 3, "rarity": "uncommon", "icon": "item_clover" },
+  { "id": "pummarola", "name": "Pummarola", "description": "+5 Max HP, +5 Speed", "cost": 20, "statModifiers": { "maxHp": 5, "speed": 5 }, "maxStack": 3, "rarity": "uncommon", "icon": "item_pummarola" }
+]

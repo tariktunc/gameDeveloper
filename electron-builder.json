@@ -1,0 +1,16 @@
+{
+  "appId": "com.blakfy.safakyok",
+  "productName": "Şafak Yok",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*"
+  ],
+  "win": {
+    "target": "portable",
+    "icon": "assets/sprites/ui/icon.png",
+    "forceCodeSigning": false
+  }
+}

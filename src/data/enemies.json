@@ -1,0 +1,68 @@
+[
+  {
+    "id": "skeleton",
+    "name": "Skeleton",
+    "hp": 15,
+    "speed": 30,
+    "damage": 5,
+    "xpValue": 1,
+    "goldValue": 1,
+    "spriteKey": "enemies",
+    "isBoss": false
+  },
+  {
+    "id": "bat",
+    "name": "Bat",
+    "hp": 8,
+    "speed": 50,
+    "damage": 3,
+    "xpValue": 1,
+    "goldValue": 1,
+    "spriteKey": "enemies",
+    "isBoss": false
+  },
+  {
+    "id": "vampire",
+    "name": "Vampire",
+    "hp": 40,
+    "speed": 35,
+    "damage": 10,
+    "xpValue": 3,
+    "goldValue": 2,
+    "spriteKey": "enemies",
+    "isBoss": false
+  },
+  {
+    "id": "ghost",
+    "name": "Ghost",
+    "hp": 20,
+    "speed": 25,
+    "damage": 7,
+    "xpValue": 2,
+    "goldValue": 1,
+    "spriteKey": "enemies",
+    "isBoss": false
+  },
+  {
+    "id": "archer",
+    "name": "Karanlık Okçu",
+    "hp": 12,
+    "speed": 20,
+    "damage": 8,
+    "xpValue": 2,
+    "goldValue": 2,
+    "spriteKey": "enemies",
+    "isBoss": false
+  },
+  {
+    "id": "boss_necromancer",
+    "name": "Necromancer",
+    "hp": 500,
+    "speed": 20,
+    "damage": 25,
+    "xpValue": 50,
+    "goldValue": 20,
+    "spriteKey": "enemies",
+    "isBoss": true
+  }
+]

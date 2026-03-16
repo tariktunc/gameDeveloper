@@ -1,0 +1,63 @@
+[
+  {
+    "id": "knife",
+    "name": "Throwing Knife",
+    "damage": 10,
+    "cooldown": 1000,
+    "projectileSpeed": 200,
+    "projectileCount": 1,
+    "pierce": 0,
+    "range": 300,
+    "type": "projectile",
+    "evolutionId": "thousand_edge",
+    "evolutionRequires": "bracer"
+  },
+  {
+    "id": "whip",
+    "name": "Whip",
+    "damage": 15,
+    "cooldown": 1200,
+    "projectileSpeed": 0,
+    "projectileCount": 1,
+    "pierce": 3,
+    "range": 80,
+    "type": "melee",
+    "evolutionId": "bloody_tear",
+    "evolutionRequires": "hollow_heart"
+  },
+  {
+    "id": "garlic",
+    "name": "Garlic",
+    "damage": 5,
+    "cooldown": 500,
+    "projectileSpeed": 0,
+    "projectileCount": 0,
+    "pierce": 0,
+    "range": 50,
+    "type": "aura",
+    "evolutionId": "soul_eater",
+    "evolutionRequires": "pummarola"
+  },
+  {
+    "id": "holy_water",
+    "name": "Holy Water",
+    "damage": 8,
+    "cooldown": 2000,
+    "projectileSpeed": 100,
+    "projectileCount": 1,
+    "pierce": 0,
+    "range": 200,
+    "type": "area"
+  },
+  {
+    "id": "cross_boomerang",
+    "name": "Cross Boomerang",
+    "damage": 12,
+    "cooldown": 1500,
+    "projectileSpeed": 150,
+    "projectileCount": 1,
+    "pierce": 5,
+    "range": 250,
+    "type": "projectile"
+  }
+]

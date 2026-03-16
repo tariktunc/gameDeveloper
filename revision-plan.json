@@ -1,0 +1,28 @@
+{
+  "planName": "Godot Planına Göre Revizyon - Electron+Phaser Projesi",
+  "totalTasks": 20,
+  "completedTasks": 20,
+  "status": "TAMAMLANDI",
+  "tasks": [
+    { "id": "F3", "task": "Başlangıçta 1 silah, level-up/mağazadan yeni silah kazanma", "status": "yapıldı" },
+    { "id": "A1", "task": "Brotato tarzı rampalı spawn (yavaş→hızlı)", "status": "yapıldı" },
+    { "id": "A2", "task": "Spawn önizleme (1sn önce uyarı işareti)", "status": "yapıldı" },
+    { "id": "A3", "task": "Dalga bitince düşman/mermi/XP temizleme", "status": "yapıldı" },
+    { "id": "A4", "task": "Dalga geçiş ekranları (Complete→İstatistik→Mağaza→Starting)", "status": "yapıldı" },
+    { "id": "B1", "task": "8 yönlü silah konumlandırması", "status": "yapıldı" },
+    { "id": "B2", "task": "Saldırı modu seçimi (Auto/Manual/Both) - Pause menüden", "status": "yapıldı" },
+    { "id": "B3", "task": "Melee silah (Whip) yön bazlı ark revizyonu", "status": "yapıldı" },
+    { "id": "B5", "task": "Çoklu silah slot sistemi (maks 6)", "status": "yapıldı" },
+    { "id": "C2", "task": "Ranged düşman tipi (Dark Archer)", "status": "yapıldı" },
+    { "id": "C3", "task": "Düşman HP/hasar skalası revizyonu (3 tier)", "status": "yapıldı" },
+    { "id": "D1", "task": "Gold coin pickup entity (her düşmandan görünür altın düşer)", "status": "yapıldı" },
+    { "id": "D2", "task": "Mağazada silah satışı (pasif + silah karışık)", "status": "yapıldı" },
+    { "id": "D3", "task": "Dalga bazlı dinamik fiyatlandırma", "status": "yapıldı" },
+    { "id": "E1", "task": "Saldırı modu ayar menüsü (Pause'da)", "status": "yapıldı" },
+    { "id": "E2", "task": "Düşman sayaç HUD göstergesi", "status": "yapıldı" },
+    { "id": "E3", "task": "Dalga sonu istatistik ekranı", "status": "yapıldı" },
+    { "id": "E4", "task": "Silah envanter UI (görsel slotlar + cooldown overlay)", "status": "yapıldı" },
+    { "id": "F1", "task": "30 dalga zorluk dengeleme (5 tier: Easy→Chaos)", "status": "yapıldı" },
+    { "id": "F2", "task": "Silah hasar/cooldown dengeleme", "status": "yapıldı" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "projectName": "Vampire Survivors Clone - Geliştirme Planı",
+  "totalTasks": 25,
+  "completedTasks": 25,
+  "tasks": [
+    { "id": 1,  "category": "Silahlar",            "task": "Whip (Kırbaç) silahı - yakın dövüş tarama saldırısı",              "status": "yapıldı" },
+    { "id": 2,  "category": "Silahlar",            "task": "Holy Water - alan hasarı silahı (yere atılan hasar bölgesi)",       "status": "yapıldı" },
+    { "id": 3,  "category": "Silahlar",            "task": "Cross Boomerang - gidip gelen bumerang mermisi",                   "status": "yapıldı" },
+    { "id": 4,  "category": "Düşman Davranışları", "task": "Bat - hızlı zigzag hareket, dalış saldırısı",                      "status": "yapıldı" },
+    { "id": 5,  "category": "Düşman Davranışları", "task": "Ghost - yavaş ama geçen hayalet, phase sistemi",                   "status": "yapıldı" },
+    { "id": 6,  "category": "Düşman Davranışları", "task": "Vampire - hızlı koşma + can çalma (lifesteal)",                    "status": "yapıldı" },
+    { "id": 7,  "category": "Düşman Davranışları", "task": "Boss Necromancer - faz sistemi, özel saldırılar, minion spawn",    "status": "yapıldı" },
+    { "id": 8,  "category": "Görsel Efektler",     "task": "Düşman ölüm parçacık efekti (particle explosion)",                 "status": "yapıldı" },
+    { "id": 9,  "category": "Görsel Efektler",     "task": "Düşman üstünde HP barı",                                          "status": "yapıldı" },
+    { "id": 10, "category": "Görsel Efektler",     "task": "Altın toplama animasyonu (yüzen altın entity + sayı)",              "status": "yapıldı" },
+    { "id": 11, "category": "Görsel Efektler",     "task": "Kritik vuruş efekti (büyük sarı hasar + parlama)",                 "status": "yapıldı" },
+    { "id": 12, "category": "Görsel Efektler",     "task": "Silah ateşleme izi / muzzle flash",                                "status": "yapıldı" },
+    { "id": 13, "category": "UI",                  "task": "Minimap (arena üzerinde oyuncu + düşman konumları)",                "status": "yapıldı" },
+    { "id": 14, "category": "UI",                  "task": "Dash cooldown göstergesi (HUD'da)",                                "status": "yapıldı" },
+    { "id": 15, "category": "UI",                  "task": "Silah ikonu + seviye göstergesi HUD'da",                           "status": "yapıldı" },
+    { "id": 16, "category": "UI",                  "task": "Dalga başlangıç duyurusu (WAVE X STARTING büyük yazı)",            "status": "yapıldı" },
+    { "id": 17, "category": "Oynanış",             "task": "Karakter seçim ekranı (farklı başlangıç statları + silah)",         "status": "yapıldı" },
+    { "id": 18, "category": "Oynanış",             "task": "Silah evrimi (evolution) sistemi çalışır hale getir",               "status": "yapıldı" },
+    { "id": 19, "category": "Oynanış",             "task": "XP dengeleme - 30 level, erken hızlı geç kademeli",                "status": "yapıldı" },
+    { "id": 20, "category": "Oynanış",             "task": "Kill combo sistemi (ardışık öldürmelerde bonus XP/hasar)",          "status": "yapıldı" },
+    { "id": 21, "category": "Ses",                 "task": "Ses efektleri (ateş, vuruş, ölüm, XP toplama, level up)",          "status": "yapıldı" },
+    { "id": 22, "category": "Ses",                 "task": "Arka plan müziği (döngüsel dark ambient drone)",                    "status": "yapıldı" },
+    { "id": 23, "category": "Oynanış",             "task": "HP potion drop sistemi (düşmanlardan iyileşme düşmesi)",            "status": "yapıldı" },
+    { "id": 24, "category": "Görsel Efektler",     "task": "XP toplama parlama efekti",                                        "status": "yapıldı" },
+    { "id": 25, "category": "Oynanış",             "task": "SaveManager ile oyun sonu istatistik kaydı + highscore tablosu",    "status": "yapıldı" }
+  ]
+}

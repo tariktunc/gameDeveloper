@@ -1,0 +1,57 @@
+{
+  "name": "safak-yok",
+  "version": "0.1.0",
+  "description": "Şafak Yok — Blakfy Studio bullet heaven survivor game",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "generate-icon": "node scripts/generate-icon.mjs",
+    "dist": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win portable && node scripts/zip-release.mjs"
+  },
+  "build": {
+    "appId": "com.blakfy.safak-yok",
+    "productName": "Şafak Yok",
+    "asar": false,
+    "directories": {
+      "output": "C:/Users/tarkt/Desktop/SafakYok-Build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "toolsets": {
+      "winCodeSign": "1.1.0"
+    },
+    "win": {
+      "target": "portable",
+      "icon": "assets/sprites/ui/icon.png"
+    },
+    "portable": {
+      "artifactName": "SafakYok.exe"
+    }
+  },
+  "keywords": [
+    "game",
+    "electron",
+    "phaser"
+  ],
+  "author": "Blakfy Studio",
+  "license": "MIT",
+  "dependencies": {
+    "electron-store": "^11.0.2",
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "archiver": "^7.0.1",
+    "cross-env": "^10.1.0",
+    "electron": "^41.0.2",
+    "electron-builder": "^26.8.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0",
+    "vite-plugin-electron": "^0.29.1"
+  }
+}
