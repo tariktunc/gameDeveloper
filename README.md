@@ -6,103 +6,16 @@
 
 ---
 
-## Teknolojiler
+## Oynamak İçin — Kurulum Gerekmez
 
-| Teknoloji | Versiyon | Kullanım |
-|-----------|----------|----------|
-| [Phaser 3](https://phaser.io/) | ^3.90.0 | Oyun motoru |
-| [Electron](https://www.electronjs.org/) | ^41.0.2 | Masaüstü uygulama |
-| [TypeScript](https://www.typescriptlang.org/) | ^5.9.3 | Dil |
-| [Vite](https://vitejs.dev/) | ^8.0.0 | Build aracı |
-| Web Audio API | — | Prosedürel müzik & ses efektleri |
+1. Bu sayfada yeşil **`< > Code`** butonuna tıkla → **Download ZIP**
+2. ZIP'i bir klasöre çıkart
+3. **`EXE DOSYASI`** klasörüne gir
+4. **`SafakYok.exe`** dosyasına çift tıkla → oyun açılır
 
----
-
-## Kurulum
-
-### Gereksinimler
-
-- [Node.js](https://nodejs.org/) v18 veya üzeri
-- npm v9 veya üzeri
-
-### Adımlar
-
-```bash
-# 1. Repoyu klonla
-git clone https://github.com/blakfy/safak-yok.git
-cd safak-yok
-
-# 2. Bağımlılıkları yükle
-npm install
-
-# 3. Geliştirme sunucusunu başlat
-npm run dev
-```
-
-Tarayıcıda `http://localhost:5173` adresinde oyun açılır.
-
----
-
-## Scriptler
-
-| Komut | Açıklama |
-|-------|----------|
-| `npm run dev` | Geliştirme modunda çalıştırır (hot reload) |
-| `npm run build` | TypeScript derler + Vite production build |
-| `npm run preview` | Production build'i önizler |
-| `npm run dist` | Windows için masaüstü `.exe` üretir |
-
----
-
-## Masaüstü Build ve Dağıtım (Windows)
-
-### Build al
-
-```bash
-npm run dist
-```
-
-Build tamamlandığında masaüstünde `SafakYok-Build/` klasörü oluşur ve içinde **`SafakYok.zip`** dosyası hazır olur.
-
-> Çıktı dizinini değiştirmek için `package.json` → `build.directories.output` değerini düzenleyin.
-
----
-
-### Oyuncular nasıl yükler?
-
-Kurulum gerektirmez. Kullanıcı yalnızca şunları yapar:
-
-1. **`SafakYok.zip`** dosyasını indir
-2. Bir klasöre **çıkart** (örneğin `C:\Oyunlar\SafakYok\`)
-3. `Şafak Yok.exe` dosyasına **çift tıkla** → oyun açılır
-
-> İlk açılışta Windows Defender "bilinmeyen yayıncı" uyarısı verebilir.
-> **"Daha fazla bilgi" → "Yine de çalıştır"** seçeneğiyle geçilebilir.
-> (İmzasız uygulama olduğu için normaldir — imzalama için bir kod imzalama sertifikası gerekir.)
-
----
-
-## Proje Yapısı
-
-```
-safak-yok/
-├── electron/              # Electron ana süreç dosyaları
-│   ├── main.ts
-│   └── preload.ts
-├── src/
-│   ├── data/              # Karakter ve oyun verileri (JSON)
-│   ├── entities/          # Player, Enemy, Projectile, XPGem, GoldCoin...
-│   ├── scenes/            # Phaser sahneleri (MainMenu, Game, Pause, Shop...)
-│   ├── systems/           # AudioManager, WaveManager, CollisionSystem, SaveManager...
-│   ├── ui/                # HUD, Minimap, arayüz bileşenleri
-│   ├── utils/             # Sabitler, tipler, matematik yardımcıları
-│   └── weapons/           # Silah sistemi (Knife, Whip, Garlic, HolyWater, CrossBoomerang)
-├── assets/
-│   └── sprites/           # Görseller ve ikonlar
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
-```
+> **Windows Defender uyarısı** çıkarsa:
+> "Daha fazla bilgi" → "Yine de çalıştır" seçeneğine tıkla.
+> (İmzasız uygulama olduğu için normaldir.)
 
 ---
 
@@ -114,11 +27,11 @@ safak-yok/
 |-----|---------|
 | `W A S D` / Ok tuşları | Hareket |
 | `Space` | Dash (kaçış) |
-| `ESC` | Duraklat / Ayarlar |
+| `ESC` | Duraklat / Ses Ayarı |
 
 ### Oyun Döngüsü
 
-1. Karakter seç (Antonio, Mortis, Fang)
+1. Karakter seç
 2. 30 dalga boyunca düşmanları yen
 3. Dalgalar arasında dükkan açılır — altın ile item satın al
 4. Her 5. dalgada **Boss** (Nekromancı) çıkar
@@ -126,11 +39,11 @@ safak-yok/
 
 ### Karakterler
 
-| Karakter | Can | Hız | Özellik | Pasif |
-|----------|-----|-----|---------|-------|
-| **Antonio** | 100 | 220 | Dengeli, Bıçak ile başlar | Her 20 öldürmede 5 can yeniler |
-| **Mortis** | 150 | 190 | Zırhlı tank, Haç Bumerangi | %30 şansla yakına 3 hasar yansıtır |
-| **Fang** | 70 | 260 | Hızlı, +%30 hasar, Kırbaç | Her öldürmede %25 şansla 2 can kazanır |
+| Karakter | Can | Hız | Pasif Yetenek |
+|----------|-----|-----|---------------|
+| **Antonio** | 100 | 220 | Her 20 öldürmede 5 can yeniler |
+| **Mortis** | 150 | 190 | %30 şansla yakına 3 hasar yansıtır |
+| **Fang** | 70 | 260 | Her öldürmede %25 şansla 2 can kazanır |
 
 ### Zorluklar
 
@@ -142,15 +55,45 @@ safak-yok/
 
 ---
 
-## Kayıt Sistemi
+## Geliştirici Kurulumu
 
-Oyun verileri tarayıcının `localStorage` alanına kaydedilir:
+Kaynak koddan çalıştırmak veya değişiklik yapmak isteyenler için:
 
-- Toplam altın (karakterleri açmak için)
-- En yüksek skor
-- Toplam öldürme / run sayısı
-- Açılan karakterler ve silahlar
-- Zorluk ve ses ayarları
+### Gereksinimler
+
+- [Node.js](https://nodejs.org/) v18+
+- npm v9+
+
+### Adımlar
+
+```bash
+git clone https://github.com/blakfy/safak-yok.git
+cd safak-yok
+npm install
+npm run dev
+```
+
+Tarayıcıda `http://localhost:5173` adresinde açılır.
+
+### Scriptler
+
+| Komut | Açıklama |
+|-------|----------|
+| `npm run dev` | Geliştirme modu (hot reload) |
+| `npm run build` | Production build |
+| `npm run dist` | Windows `.exe` üretir |
+
+---
+
+## Teknolojiler
+
+| Teknoloji | Kullanım |
+|-----------|----------|
+| [Phaser 3](https://phaser.io/) | Oyun motoru |
+| [Electron](https://www.electronjs.org/) | Masaüstü uygulama |
+| [TypeScript](https://www.typescriptlang.org/) | Dil |
+| [Vite](https://vitejs.dev/) | Build aracı |
+| Web Audio API | Prosedürel müzik & ses efektleri |
 
 ---
 
