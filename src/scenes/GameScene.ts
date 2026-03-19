@@ -121,7 +121,7 @@ export class GameScene extends Phaser.Scene {
     // Create player at center with character-specific sprite
     const spriteKey = charData?.spriteKey ?? 'player-tarik';
     this.player = new Player(this, ARENA_WIDTH / 2, ARENA_HEIGHT / 2, spriteKey, characterId);
-    this.player.setScale(2); // Karakter görsel boyutu 2x
+    this.player.setScale(1); // Player 64px, enemy 48px — player 1 tık büyük
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
     // Apply character stats
@@ -204,6 +204,7 @@ export class GameScene extends Phaser.Scene {
     if (charData?.bossRivalId) {
       this.waveManager.setRivalBossId(charData.bossRivalId);
     }
+    this.waveManager.onRivalBossSpawn = (bossName) => this.showRivalBossAnnouncement(bossName);
     // Devam kayıdı varsa state'i geri yükle
     let startWave = 1;
     if (data?.resumeRun) {
@@ -472,6 +473,14 @@ export class GameScene extends Phaser.Scene {
       this.showDamageNumber(this.player.x, this.player.y, damage, true);
       this.cameras.main.shake(100, 0.008);
       this.audioManager.playPlayerHit();
+
+      // Kahraman: Demir Cilt — hasar alınca %30 şansla +1 Zırh (maks 5)
+      if (this.characterId === 'orjinal' && Math.random() < 0.30) {
+        if (this.player.stats.armor < 5) {
+          this.player.stats.armor += 1;
+          this.showPassiveTrigger('DEMİR CİLT!', '#aabbff');
+        }
+      }
 
       // (Taş Deri pasifi kaldırıldı — yeni karakterlerde mevcut değil)
       if (false && this.characterId === 'mortis' && Math.random() < 0.30) {
@@ -839,6 +848,7 @@ export class GameScene extends Phaser.Scene {
         kills: this.player.kills,
         wave: this.waveManager.wave,
         gold: this.player.gold,
+        score,
         victory: true,
         highScore: this.saveManager.saveData.highScore,
         previousHighScore,
@@ -1328,6 +1338,48 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** Rakip boss sahneye çıktığında dramatik duyuru göster */
+  private showRivalBossAnnouncement(bossName: string): void {
+    // Ekranı kırmızıya çevir
+    const flash = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x330000, 0)
+      .setScrollFactor(0).setDepth(290);
+    this.tweens.add({
+      targets: flash, alpha: 0.5, duration: 200, yoyo: true, repeat: 2,
+      onComplete: () => flash.destroy()
+    });
+
+    // Kamera sarsıntısı
+    this.cameras.main.shake(600, 0.015);
+
+    // Üst metin: "RAKIP GELİYOR!"
+    const topText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'RAKİBİN GELİYOR!', {
+      fontSize: '28px', fontFamily: 'monospace', color: '#ff4444', fontStyle: 'bold'
+    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(300).setAlpha(0);
+
+    // Ana metin: boss adı
+    const nameText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 5, bossName.toUpperCase(), {
+      fontSize: '52px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold'
+    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(300).setAlpha(0);
+
+    // Alt metin
+    const subText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 55, 'KARŞINDA!', {
+      fontSize: '22px', fontFamily: 'monospace', color: '#ff8800', fontStyle: 'bold'
+    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(300).setAlpha(0);
+
+    const elements = [topText, nameText, subText];
+    this.tweens.add({
+      targets: elements, alpha: 1, duration: 250, ease: 'Power2',
+      onComplete: () => {
+        this.time.delayedCall(1800, () => {
+          this.tweens.add({
+            targets: elements, alpha: 0, duration: 400,
+            onComplete: () => elements.forEach(e => e.destroy())
+          });
+        });
+      }
+    });
+  }
+
   /** Task 16: Show wave announcement text with fade in/out */
   private showWaveAnnouncement(waveNumber: number): void {
     const isBossWave = waveNumber % 5 === 0;
@@ -1519,8 +1571,16 @@ export class GameScene extends Phaser.Scene {
     const px = this.player.x;
     const py = this.player.y;
 
-    // Oyuncuyu gizle
-    this.player.setVisible(false);
+    // Ölüm animasyonunu oynat, sonra gizle
+    const dieKey = `${this.characterId}_die`;
+    if (this.player.anims.exists(dieKey)) {
+      this.player.play(dieKey, true);
+      this.player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+        this.player.setVisible(false);
+      });
+    } else {
+      this.player.setVisible(false);
+    }
 
     // Kırmızı patlama parçacıkları
     for (let i = 0; i < 16; i++) {
@@ -1588,6 +1648,7 @@ export class GameScene extends Phaser.Scene {
       kills: this.player.kills,
       wave: this.waveManager.wave,
       gold: this.player.gold,
+      score,
       victory: false,
       highScore: this.saveManager.saveData.highScore,
       previousHighScore,

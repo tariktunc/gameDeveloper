@@ -24,8 +24,8 @@ export class HolyWater extends WeaponBase {
     super(scene, owner, {
       id: 'holy_water',
       name: 'Kutsal Su',
-      damage: 8,
-      cooldown: 3000,
+      damage: 12,
+      cooldown: 2500,
       projectileSpeed: 0,
       projectileCount: 1,
       pierce: 0,

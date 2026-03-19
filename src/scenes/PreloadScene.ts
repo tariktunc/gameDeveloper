@@ -44,9 +44,21 @@ export class PreloadScene extends Phaser.Scene {
     // Mumin görselleri
     this.load.image('mumin-idle', 'sprites/player/mumin/idle.png');
     for (let i = 0; i <= 9; i++) {
-      this.load.image(`mumin-run-${i}`, `sprites/player/mumin/run/${i}.png`);
-      this.load.image(`mumin-die-${i}`, `sprites/player/mumin/die/${i}.png`);
+      this.load.image(`mumin-run-${i}`,   `sprites/player/mumin/run/${i}.png`);
+      this.load.image(`mumin-die-${i}`,   `sprites/player/mumin/die/${i}.png`);
+      this.load.image(`mumin-shoot-${i}`, `sprites/player/mumin/shoot/${i}.png`);
     }
+
+    // Orjinal karakter görselleri (3. karakter)
+    for (let i = 0; i <= 9; i++) {
+      this.load.image(`orjinal-run-${i}`,   `sprites/player/orjinal/run/${i}.png`);
+      this.load.image(`orjinal-die-${i}`,   `sprites/player/orjinal/die/${i}.png`);
+      this.load.image(`orjinal-shoot-${i}`, `sprites/player/orjinal/shoot/${i}.png`);
+      this.load.image(`orjinal-stand-${i}`, `sprites/player/orjinal/stand/${i}.png`);
+    }
+
+    // Ok görseli (archer projectile)
+    this.load.image('arrow', 'sprites/projectiles/arrow.png');
 
     this.load.on('loaderror', () => {
       // sessizce yoksay; create() prosedürel fallback kullanır
@@ -85,37 +97,111 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   /** Tarık spritesheet: 6 animasyon karesi, her biri 64×64 */
+  /** Tarık için gövde çiz: alt kısım savaşçı bedeni, üst kısım kafa görseli */
+  private drawTarikBodyWithFace(
+    ctx: CanvasRenderingContext2D, ox: number, frameSize: number, faceKey: string, frameIndex: number
+  ): void {
+    const s = frameSize / 64; // scale factor
+
+    // --- Gövde (alt %55) ---
+    // Gövde rengi: mavi zırh tonu
+    ctx.fillStyle = '#1a3a6e';
+    ctx.fillRect(ox + 20*s, 28*s, 24*s, 20*s); // gövde
+
+    // Omuzlar
+    ctx.fillStyle = '#2a5a9e';
+    ctx.fillRect(ox + 14*s, 26*s, 10*s, 12*s); // sol omuz
+    ctx.fillRect(ox + 40*s, 26*s, 10*s, 12*s); // sağ omuz
+
+    // Kollar
+    ctx.fillStyle = '#3a6abe';
+    ctx.fillRect(ox + 12*s, 36*s, 8*s, 14*s);  // sol kol
+    ctx.fillRect(ox + 44*s, 36*s, 8*s, 14*s);  // sağ kol
+
+    // Bacaklar — her frame için hafif yürüyüş pozu
+    const legOffset = [0, 3, 5, 3, 0, -3][frameIndex % 6];
+    ctx.fillStyle = '#0e2244';
+    ctx.fillRect(ox + 20*s, 48*s,        10*s, 14*s + legOffset*s); // sol bacak
+    ctx.fillRect(ox + 34*s, 48*s,        10*s, 14*s - legOffset*s); // sağ bacak
+
+    // Ayakkabılar
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(ox + 18*s, (62 + legOffset)*s, 14*s, 2*s);
+    ctx.fillRect(ox + 32*s, (62 - legOffset)*s, 14*s, 2*s);
+
+    // Boyun
+    ctx.fillStyle = '#c8a080';
+    ctx.fillRect(ox + 28*s, 22*s, 8*s, 8*s);
+
+    // --- Kafa görseli (üst %40, ortalı) ---
+    const headSize = 28 * s; // kafanın boyutu
+    const headX = ox + (frameSize / 2) - (headSize / 2);
+    const headY = 0;
+    if (this.textures.exists(faceKey)) {
+      const src = this.textures.get(faceKey).getSourceImage() as HTMLImageElement;
+      // Kare kırpma: kafeyi merkeze al, kare kesit al
+      const srcW = src.naturalWidth || src.width;
+      const srcH = src.naturalHeight || src.height;
+      const cropSize = Math.min(srcW, srcH);
+      const cropX = (srcW - cropSize) / 2;
+      const cropY = (srcH - cropSize) / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(headX + headSize / 2, headY + headSize / 2, headSize / 2, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(src, cropX, cropY, cropSize, cropSize, headX, headY, headSize, headSize);
+      ctx.restore();
+    } else {
+      // Fallback: basit kafa
+      ctx.fillStyle = '#c8a080';
+      ctx.beginPath();
+      ctx.arc(ox + frameSize / 2, headY + headSize / 2, headSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   private generateTarikSpritesheet(): void {
     const frameSize = 64;
     const frameCount = 6;
     const canvas = this.drawToCanvas(frameSize * frameCount, frameSize, (ctx) => {
       for (let i = 1; i <= frameCount; i++) {
-        const key = `tarik-frame-${i}`;
-        this.drawImageOrColor(ctx, key, (i - 1) * frameSize, 0, frameSize, frameSize, '#3355ff');
+        const ox = (i - 1) * frameSize;
+        this.drawTarikBodyWithFace(ctx, ox, frameSize, `tarik-frame-${i}`, i - 1);
       }
     });
     if (this.textures.exists('player-tarik')) this.textures.remove('player-tarik');
     this.textures.addSpriteSheet('player-tarik', canvas as any, { frameWidth: frameSize, frameHeight: frameSize });
   }
 
-  /** Mumin spritesheet: 10 run karesi + 10 die karesi = 20 kare, 64×64 */
+  /** Mumin spritesheet: 10 run + 10 die + 10 shoot = 30 kare, 64×64 */
   private generateMuminSpritesheet(): void {
     const frameSize = 64;
-    const totalFrames = 20; // 0-9: run, 10-19: die
+    const totalFrames = 30; // 0-9: run, 10-19: die, 20-29: shoot
     const canvas = this.drawToCanvas(frameSize * totalFrames, frameSize, (ctx) => {
-      // Run frames (0-9)
       for (let i = 0; i <= 9; i++) {
-        const key = `mumin-run-${i}`;
-        this.drawImageOrColor(ctx, key, i * frameSize, 0, frameSize, frameSize, '#cc4411');
-      }
-      // Die frames (10-19)
-      for (let i = 0; i <= 9; i++) {
-        const key = `mumin-die-${i}`;
-        this.drawImageOrColor(ctx, key, (10 + i) * frameSize, 0, frameSize, frameSize, '#661100');
+        this.drawImageOrColor(ctx, `mumin-run-${i}`,   i * frameSize,        0, frameSize, frameSize, '#cc4411');
+        this.drawImageOrColor(ctx, `mumin-die-${i}`,   (10 + i) * frameSize, 0, frameSize, frameSize, '#661100');
+        this.drawImageOrColor(ctx, `mumin-shoot-${i}`, (20 + i) * frameSize, 0, frameSize, frameSize, '#ff6600');
       }
     });
     if (this.textures.exists('player-mumin')) this.textures.remove('player-mumin');
     this.textures.addSpriteSheet('player-mumin', canvas as any, { frameWidth: frameSize, frameHeight: frameSize });
+  }
+
+  /** Orjinal karakter spritesheet: run(0-9) + die(10-19) + shoot(20-29) + stand(30-39) = 40 kare, 64×64 */
+  private generateOrjinalSpritesheet(): void {
+    const frameSize = 64;
+    const totalFrames = 40;
+    const canvas = this.drawToCanvas(frameSize * totalFrames, frameSize, (ctx) => {
+      for (let i = 0; i <= 9; i++) {
+        this.drawImageOrColor(ctx, `orjinal-run-${i}`,   i * frameSize,        0, frameSize, frameSize, '#2244cc');
+        this.drawImageOrColor(ctx, `orjinal-die-${i}`,   (10 + i) * frameSize, 0, frameSize, frameSize, '#112266');
+        this.drawImageOrColor(ctx, `orjinal-shoot-${i}`, (20 + i) * frameSize, 0, frameSize, frameSize, '#4466ff');
+        this.drawImageOrColor(ctx, `orjinal-stand-${i}`, (30 + i) * frameSize, 0, frameSize, frameSize, '#3355dd');
+      }
+    });
+    if (this.textures.exists('player-orjinal')) this.textures.remove('player-orjinal');
+    this.textures.addSpriteSheet('player-orjinal', canvas as any, { frameWidth: frameSize, frameHeight: frameSize });
   }
 
   /** Düşman spritesheet: 9 slot × 48×48 */
@@ -128,16 +214,28 @@ export class PreloadScene extends Phaser.Scene {
       3: 'enemy-katina',   // Hayalet
       5: 'enemy-bulsar',   // Okçu
       6: 'enemy-sezer',    // Sezer mini boss
-      7: 'enemy-sezer',    // Mumin boss (sezer görsel kullan)
-      8: 'enemy-sezer',    // Tarık boss (sezer görsel kullan)
+    };
+    // Boss slotları: player spritesheet'inden frame 0 kullan
+    const bossSlots: Record<number, { key: string; frameW: number }> = {
+      7: { key: 'player-mumin',   frameW: 64 }, // Mumin boss
+      8: { key: 'player-tarik',   frameW: 64 }, // Tarık boss
+      9: { key: 'player-orjinal', frameW: 64 }, // Kahraman boss
     };
 
-    const totalSlots = 9;
+    const totalSlots = 10;
     const canvas = this.drawToCanvas(frameSize * totalSlots, frameSize, (ctx) => {
       for (let slot = 0; slot < totalSlots; slot++) {
         const ox = slot * frameSize;
-        const imgKey = imageSlots[slot];
 
+        // Boss: spritesheet'in ilk frame'ini (64×64) 48×48'e ölçekle
+        if (bossSlots[slot] && this.textures.exists(bossSlots[slot].key)) {
+          const { key, frameW } = bossSlots[slot];
+          const source = this.textures.get(key).getSourceImage() as HTMLImageElement;
+          ctx.drawImage(source, 0, 0, frameW, frameW, ox, 0, frameSize, frameSize);
+          continue;
+        }
+
+        const imgKey = imageSlots[slot];
         if (imgKey && this.textures.exists(imgKey)) {
           const source = this.textures.get(imgKey).getSourceImage() as HTMLImageElement;
           ctx.drawImage(source, ox, 0, frameSize, frameSize);
@@ -262,6 +360,9 @@ export class PreloadScene extends Phaser.Scene {
     // Mumin spritesheet oluştur
     this.generateMuminSpritesheet();
 
+    // Orjinal karakter spritesheet oluştur
+    this.generateOrjinalSpritesheet();
+
     // Düşman spritesheet: gerçek görselleri yerleştir
     this.generateEnemySpritesheet();
 
@@ -277,6 +378,12 @@ export class PreloadScene extends Phaser.Scene {
       frames: this.anims.generateFrameNumbers('player-tarik', { start: 0, end: 5 }),
       frameRate: 8,
       repeat: -1
+    });
+    this.anims.create({
+      key: 'tarik_die',
+      frames: this.anims.generateFrameNumbers('player-tarik', { start: 0, end: 5 }),
+      frameRate: 4,
+      repeat: 0
     });
 
     // Mumin animasyonları (frames 0-9: run, 10-19: die)
@@ -296,6 +403,38 @@ export class PreloadScene extends Phaser.Scene {
       key: 'mumin_die',
       frames: this.anims.generateFrameNumbers('player-mumin', { start: 10, end: 19 }),
       frameRate: 10,
+      repeat: 0
+    });
+    this.anims.create({
+      key: 'mumin_shoot',
+      frames: this.anims.generateFrameNumbers('player-mumin', { start: 20, end: 29 }),
+      frameRate: 12,
+      repeat: 0
+    });
+
+    // Orjinal karakter animasyonları (run:0-9, die:10-19, shoot:20-29, stand:30-39)
+    this.anims.create({
+      key: 'orjinal_idle',
+      frames: this.anims.generateFrameNumbers('player-orjinal', { start: 30, end: 39 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'orjinal_walk',
+      frames: this.anims.generateFrameNumbers('player-orjinal', { start: 0, end: 9 }),
+      frameRate: 10,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'orjinal_die',
+      frames: this.anims.generateFrameNumbers('player-orjinal', { start: 10, end: 19 }),
+      frameRate: 10,
+      repeat: 0
+    });
+    this.anims.create({
+      key: 'orjinal_shoot',
+      frames: this.anims.generateFrameNumbers('player-orjinal', { start: 20, end: 29 }),
+      frameRate: 12,
       repeat: 0
     });
 

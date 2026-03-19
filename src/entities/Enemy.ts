@@ -37,7 +37,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
 
   // Archer behavior
   private archerShootTimer: number = 0;
-  private archerProjectiles: Phaser.GameObjects.Graphics[] = [];
+  private archerProjectiles: (Phaser.GameObjects.Image | Phaser.GameObjects.Graphics)[] = [];
   private lastTargetX: number = 0;
   private lastTargetY: number = 0;
 
@@ -518,19 +518,31 @@ export class Enemy extends Phaser.GameObjects.Sprite {
 
     const dirX = dx / dist;
     const dirY = dy / dist;
+    const angle = Math.atan2(dirY, dirX);
 
-    const gfx = this.scene.add.graphics();
-    gfx.fillStyle(0x990000, 0.9);
-    gfx.fillCircle(0, 0, 6);
-    gfx.setPosition(this.x, this.y);
-    gfx.setDepth(6);
+    let proj: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
 
-    gfx.setData('dirX', dirX);
-    gfx.setData('dirY', dirY);
-    gfx.setData('lifetime', 0);
-    gfx.setData('speed', 180);
+    if (this.scene.textures.exists('arrow')) {
+      const img = this.scene.add.image(this.x, this.y, 'arrow');
+      img.setRotation(angle);
+      img.setScale(0.08); // Arrow.png yüksek çözünürlüklü, küçültelim
+      img.setDepth(6);
+      proj = img;
+    } else {
+      const gfx = this.scene.add.graphics();
+      gfx.fillStyle(0x990000, 0.9);
+      gfx.fillCircle(0, 0, 6);
+      gfx.setPosition(this.x, this.y);
+      gfx.setDepth(6);
+      proj = gfx;
+    }
 
-    this.archerProjectiles.push(gfx);
+    proj.setData('dirX', dirX);
+    proj.setData('dirY', dirY);
+    proj.setData('lifetime', 0);
+    proj.setData('speed', 180);
+
+    this.archerProjectiles.push(proj);
   }
 
   private updateArcherProjectiles(dt: number): void {

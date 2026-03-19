@@ -85,15 +85,15 @@ export class CollisionSystem {
     if (!this.player.isAlive || this.player.isInvincible) return;
 
     // Contact damage check (spatial grid, nearby enemies only)
-    // Player sprite 2x scale → görsel boyut ~64px → yarıçap 32px
-    // Enemy sprite 1x scale → görsel boyut ~32px → yarıçap 16px
-    // Temas mesafesi (merkez-merkez): 32 + 16 = 48px → queryCircle en az 64px olmalı
-    const nearby = this.enemyGrid.queryCircle(this.player.x, this.player.y, 64);
+    // Player sprite 1x scale → görsel boyut 64px → yarıçap 32px
+    // Enemy sprite 1x scale → görsel boyut 48px → yarıçap 24px
+    // Temas mesafesi (merkez-merkez): 32 + 24 = 56px → queryCircle 70px
+    const nearby = this.enemyGrid.queryCircle(this.player.x, this.player.y, 70);
     for (const enemy of nearby) {
       if (!enemy.active) continue;
 
       const distSqVal = distanceSq(this.player.x, this.player.y, enemy.x, enemy.y);
-      if (distSqVal < 44 * 44) { // player r=32 + enemy r=16 = 48, biraz örtüşme için 44
+      if (distSqVal < 50 * 50) { // player r=32 + enemy r=24 = 56, biraz örtüşme için 50
         const actualDamage = this.player.takeDamage(enemy.damage);
         if (actualDamage > 0) {
           enemy.onHitPlayer();

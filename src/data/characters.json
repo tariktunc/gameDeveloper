@@ -34,5 +34,23 @@
       "luck": 1.2
     },
     "spriteKey": "player-mumin"
+  },
+  {
+    "id": "orjinal",
+    "name": "Kahraman",
+    "description": "Demir zırhlı savaşçı. Kırbaç ile başlar.",
+    "passive": "Demir Cilt: Hasar alındığında %30 şansla 1 Zırh kazan (maks 5)",
+    "startingWeapon": "whip",
+    "bossRivalId": "boss_orjinal",
+    "baseStats": {
+      "maxHp": 120,
+      "speed": 200,
+      "damage": 1.0,
+      "attackSpeed": 0.9,
+      "armor": 2,
+      "pickupRange": 70,
+      "luck": 1.0
+    },
+    "spriteKey": "player-orjinal"
   }
 ]

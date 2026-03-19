@@ -27,8 +27,8 @@ export class CrossBoomerang extends WeaponBase {
     super(scene, owner, {
       id: 'cross_boomerang',
       name: 'Haç Bumerangi',
-      damage: 15,
-      cooldown: 1500,
+      damage: 18,
+      cooldown: 1200,
       projectileSpeed: 280,
       projectileCount: 1,
       pierce: 99,

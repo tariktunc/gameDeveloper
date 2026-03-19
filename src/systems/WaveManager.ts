@@ -107,6 +107,18 @@ const ENEMY_DATA: Record<string, EnemyData> = {
     spriteKey: 'enemies',
     frame: 6,
     isBoss: true
+  },
+  boss_orjinal: {
+    id: 'boss_orjinal',
+    name: 'Kahraman',
+    hp: 900,
+    speed: 45,
+    damage: 28,
+    xpValue: 80,
+    goldValue: 100,
+    spriteKey: 'enemies',
+    frame: 9,
+    isBoss: true
   }
 };
 
@@ -124,6 +136,7 @@ export class WaveManager {
   private cameraX: number = 0;
   private cameraY: number = 0;
   public onWaveComplete?: () => void;
+  public onRivalBossSpawn?: (bossName: string) => void;
   private rivalBossId: string = '';
   private sezerSpawned: boolean = false;
   private rivalBossSpawned: boolean = false;
@@ -261,13 +274,16 @@ export class WaveManager {
       this.spawnBossNearPlayer(ENEMY_DATA.boss_sezer);
     }
 
-    // Rakip boss (Mumin veya Tarık): dalga 5 ve 10'da wave başında gelir
+    // Rakip boss: dalga 5 ve 10'da wave başında gelir, özel duyuru tetiklenir
     if (!this.rivalBossSpawned && this.rivalBossId &&
         (this.currentWave === 5 || this.currentWave === 10) &&
         this.waveTimer < 3000) {
       this.rivalBossSpawned = true;
       const rivalData = ENEMY_DATA[this.rivalBossId];
-      if (rivalData) this.spawnBossNearPlayer(rivalData);
+      if (rivalData) {
+        this.spawnBossNearPlayer(rivalData);
+        this.onRivalBossSpawn?.(rivalData.name);
+      }
     }
 
     if (this.waveTimer >= waveDuration) {
@@ -316,11 +332,11 @@ export class WaveManager {
     const wave = this.currentWave;
     let base: number;
     if (wave <= 5) {
-      base = 1 + (wave - 1) * 0.1;
+      base = 1 + (wave - 1) * 0.12;     // 1.0 → 1.48x (daha yumuşak giriş)
     } else if (wave <= 15) {
-      base = 1.5 + (wave - 6) * 0.2;
+      base = 1.5 + (wave - 6) * 0.15;   // 1.5 → 3.0x (önceki 0.2 → 0.15, daha yumuşak)
     } else {
-      base = 3.5 + (wave - 16) * 0.3;
+      base = 3.0 + (wave - 16) * 0.25;  // 3.0x+ (geç oyun)
     }
     return base * this.difficultyHpMult;
   }
