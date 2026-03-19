@@ -21,7 +21,7 @@ import { MinimapUI } from '../ui/MinimapUI';
 import { AudioManager } from '../systems/AudioManager';
 import { SaveManager } from '../systems/SaveManager';
 import { getEvolution } from '../weapons/WeaponEvolution';
-import { CharacterData } from '../utils/types';
+import { CharacterData, RunSaveData } from '../utils/types';
 import characters from '../data/characters.json';
 import { ARENA_WIDTH, ARENA_HEIGHT, GAME_WIDTH, GAME_HEIGHT, MAX_ENEMIES, MAX_PROJECTILES, MAX_XP_GEMS, MAX_GOLD_COINS } from '../utils/constants';
 
@@ -35,7 +35,7 @@ export class GameScene extends Phaser.Scene {
   private minimap!: MinimapUI;
   private audioManager!: AudioManager;
   private saveManager!: SaveManager;
-  private characterId: string = 'antonio';
+  private characterId: string = 'tarik';
 
   private enemyPool!: ObjectPool<Enemy>;
   private projectilePool!: ObjectPool<Projectile>;
@@ -63,6 +63,15 @@ export class GameScene extends Phaser.Scene {
   // Wave timer warning (fire once per wave at 10s left)
   private waveWarningFiredForWave: number = 0;
 
+  // BUG-3: Sahne geçişi kilidi — aynı anda birden fazla overlay açılmasını önler
+  private isTransitioning: boolean = false;
+
+  // Kritik vuruş şansı (crit_up pasifi ile artar)
+  private critChance: number = 0.15;
+
+  // P3-1: Dash afterimage object pool
+  private afterimagePool: Phaser.GameObjects.Sprite[] = [];
+
   constructor() {
     super({ key: 'GameScene' });
   }
@@ -80,7 +89,7 @@ export class GameScene extends Phaser.Scene {
     return this.comboCount;
   }
 
-  create(data?: { characterId?: string }): void {
+  create(data?: { characterId?: string; resumeRun?: boolean }): void {
     // Reset combo state
     this.comboCount = 0;
     this.comboTimer = 0;
@@ -90,25 +99,32 @@ export class GameScene extends Phaser.Scene {
     this.waveDamageTaken = 0;
     this.waveGoldEarned = 0;
 
+    // BUG-3: Geçiş kilidini sıfırla
+    this.isTransitioning = false;
+
     // Draw arena background
     this.createArenaBackground();
 
     // Set world and camera bounds
     this.cameras.main.setBounds(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
 
-    // Create player at center
-    this.player = new Player(this, ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
-    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-
     // Zorluk çarpanları
     const diffSave = new SaveManager();
     const { enemyHpMult, enemyDamageMult, playerDamageMult } = this.getDifficultyMultipliers(diffSave.difficulty);
 
-    // Task 17: Apply character data
-    this.characterId = data?.characterId ?? 'antonio';
+    // Karakter verisini belirle
+    this.characterId = data?.characterId ?? 'tarik';
     const characterId = this.characterId;
     const charList = characters as CharacterData[];
     const charData = charList.find(c => c.id === characterId) ?? charList[0];
+
+    // Create player at center with character-specific sprite
+    const spriteKey = charData?.spriteKey ?? 'player-tarik';
+    this.player = new Player(this, ARENA_WIDTH / 2, ARENA_HEIGHT / 2, spriteKey, characterId);
+    this.player.setScale(2); // Karakter görsel boyutu 2x
+    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+
+    // Apply character stats
     if (charData) {
       this.player.stats.maxHp = charData.baseStats.maxHp;
       this.player.stats.speed = charData.baseStats.speed;
@@ -118,14 +134,6 @@ export class GameScene extends Phaser.Scene {
       this.player.stats.pickupRange = charData.baseStats.pickupRange;
       this.player.stats.luck = charData.baseStats.luck;
       this.player.currentHp = charData.baseStats.maxHp;
-
-      // Karakter renk ayrımı
-      const tints: Record<string, number> = {
-        antonio: 0x88aaff, // mavi
-        mortis:  0xff6644, // kırmızı-turuncu
-        fang:    0xcc66ff  // mor
-      };
-      if (tints[characterId]) this.player.setDefaultTint(tints[characterId]);
     }
 
     // Input
@@ -192,8 +200,60 @@ export class GameScene extends Phaser.Scene {
     // Wave Manager
     this.waveManager = new WaveManager(this, this.enemyPool, enemyHpMult, enemyDamageMult);
     this.waveManager.onWaveComplete = () => this.onWaveComplete();
-    // Spawn preview warnings devre dışı (görsel hata oluşturuyordu)
-    this.waveManager.startWave(1);
+    // Rakip boss ID'sini aktar (Tarık seçtiyse Mumin boss, tersi de geçerli)
+    if (charData?.bossRivalId) {
+      this.waveManager.setRivalBossId(charData.bossRivalId);
+    }
+    // Devam kayıdı varsa state'i geri yükle
+    let startWave = 1;
+    if (data?.resumeRun) {
+      const runSave = diffSave.loadRun();
+      if (runSave) {
+        startWave = runSave.wave + 1; // tamamlanan dalganın bir sonraki dalga
+
+        // Oyuncu state'ini geri yükle
+        this.player.level = runSave.playerLevel;
+        this.player.gold = runSave.gold;
+        this.player.kills = runSave.kills;
+        Object.assign(this.player.stats, runSave.playerStats);
+        this.player.currentHp = Math.min(runSave.playerHp, runSave.playerStats.maxHp);
+
+        // Pasif itemler
+        this.player.passiveItems.push(...runSave.passiveItems);
+
+        // hp_regen pasifi için timer kur
+        const regenCount = runSave.passiveItems.filter(p => p === 'hp_regen').length;
+        if (regenCount > 0) {
+          this.time.addEvent({
+            delay: 5000,
+            loop: true,
+            callback: () => {
+              if (this.player?.isAlive) {
+                const healAmt = this.player.passiveItems.filter(p => p === 'hp_regen').length;
+                this.player.heal(healAmt);
+              }
+            }
+          });
+        }
+
+        // Silahları geri yükle (başlangıç silahı zaten eklendi, önce temizle)
+        this.weapons = [];
+        this.player.weaponIds = [];
+        for (const wId of runSave.weaponIds) {
+          this.addWeaponById(wId);
+          const savedLevel = runSave.weaponLevels[wId] ?? 1;
+          const weapon = this.weapons[this.weapons.length - 1];
+          if (weapon) {
+            const levelsToApply = savedLevel - 1;
+            for (let i = 0; i < levelsToApply; i++) {
+              weapon.levelUp();
+            }
+          }
+        }
+      }
+    }
+
+    this.waveManager.startWave(startWave);
 
     // Collision System
     this.collisionSystem = new CollisionSystem(
@@ -233,8 +293,15 @@ export class GameScene extends Phaser.Scene {
     // Task 25: SaveManager
     this.saveManager = new SaveManager();
 
+    // P3-1: Afterimage pool — player oluşturulduktan sonra doldur
+    for (let i = 0; i < 10; i++) {
+      const s = this.add.sprite(0, 0, this.player.texture.key, 0);
+      s.setActive(false).setVisible(false).setDepth(4);
+      this.afterimagePool.push(s);
+    }
+
     // Task 16: Wave announcement at game start
-    this.showWaveAnnouncement(1);
+    this.showWaveAnnouncement(startWave);
   }
 
   /** Task 17: Add a weapon by ID */
@@ -319,12 +386,10 @@ export class GameScene extends Phaser.Scene {
       let finalDamage = damage;
       if (isCrit) {
         finalDamage = damage * 2;
-        // Apply extra crit damage only if enemy is still alive
+        // BUG-2: Ek crit hasarını yalnızca düşman hâlâ hayattaysa uygula;
+        // onEnemyKilled'ı CollisionSystem zaten çağıracak, burada tekrar çağırma.
         if (enemy.active && enemy.currentHp > 0) {
-          const killed = enemy.takeDamage(damage);
-          if (killed) {
-            this.collisionSystem.onEnemyKilled?.(enemy);
-          }
+          enemy.takeDamage(damage);
         }
         this.showCritFlash(enemy.x, enemy.y);
       }
@@ -373,15 +438,15 @@ export class GameScene extends Phaser.Scene {
         this.spawnHealthPotion(enemy.x, enemy.y);
       }
 
-      // --- Character passives on kill ---
-      // Antonio: Savaşçı Ruhu — every 20 kills, heal 5 HP
-      if (this.characterId === 'antonio' && this.player.kills % 20 === 0) {
+      // --- Karakter pasifleri (öldürme) ---
+      // Tarık: Savaşçı Ruhu — her 20 öldürmede 5 Can
+      if (this.characterId === 'tarik' && this.player.kills % 20 === 0) {
         this.player.currentHp = Math.min(this.player.currentHp + 5, this.player.stats.maxHp);
         this.showHealText(this.player.x, this.player.y, 5);
         this.showPassiveTrigger('SAVAŞÇI RUHU!', '#44ff88');
       }
-      // Fang: Kan Emici — 25% chance to heal 2 HP on kill
-      if (this.characterId === 'fang' && Math.random() < 0.25) {
+      // Mumin: Kan Emici — %25 şansla 2 Can
+      if (this.characterId === 'mumin' && Math.random() < 0.25) {
         this.player.currentHp = Math.min(this.player.currentHp + 2, this.player.stats.maxHp);
         this.showHealText(this.player.x, this.player.y, 2);
         this.showPassiveTrigger('KAN EMİCİ!', '#ff4466');
@@ -408,8 +473,8 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.shake(100, 0.008);
       this.audioManager.playPlayerHit();
 
-      // Mortis: Taş Deri — 30% chance to reflect 3 damage to nearby enemies (range 80)
-      if (this.characterId === 'mortis' && Math.random() < 0.30) {
+      // (Taş Deri pasifi kaldırıldı — yeni karakterlerde mevcut değil)
+      if (false && this.characterId === 'mortis' && Math.random() < 0.30) {
         const thornRange = 80;
         const thornRangeSq = thornRange * thornRange;
         let thornHit = false;
@@ -500,23 +565,13 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.shake(80, 0.003);
       this.audioManager.playDash();
 
-      // Dash afterimage trail
+      // Dash afterimage trail (P3-1: object pool kullanıyor)
+      const snapX = this.player.x;
+      const snapY = this.player.y;
+      const snapFlip = this.player.flipX;
       for (let i = 0; i < 5; i++) {
         this.time.delayedCall(i * 30, () => {
-          const ghost = this.add.sprite(this.player.x, this.player.y, 'player', 0);
-          ghost.setAlpha(0.55 - i * 0.08);
-          ghost.setTint(0x4488ff);
-          ghost.setDepth(4);
-          ghost.setFlipX(this.player.flipX);
-          this.tweens.add({
-            targets: ghost,
-            alpha: 0,
-            scaleX: 0.6,
-            scaleY: 0.6,
-            duration: 220,
-            ease: 'Power2',
-            onComplete: () => ghost.destroy()
-          });
+          this.spawnAfterimage(snapX, snapY, snapFlip, 0.55 - i * 0.08);
         });
       }
     }
@@ -620,6 +675,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onLevelUp(level: number): void {
+    // BUG-3: Geçiş aktifse LevelUp ekranını atla
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+
     this.audioManager.playLevelUp();
 
     // Level-up burst ring around player
@@ -634,6 +693,7 @@ export class GameScene extends Phaser.Scene {
       player: this.player,
       onSelect: (choice: string) => {
         this.applyLevelUpChoice(choice);
+        this.isTransitioning = false;
         this.scene.resume('GameScene');
       }
     });
@@ -709,18 +769,52 @@ export class GameScene extends Phaser.Scene {
   }
 
   private applyLevelUpChoice(choice: string): void {
-    // Check if it's an existing weapon upgrade
+    // Silah yükseltme
     const existingWeapon = this.weapons.find(w => w.data.id === choice);
     if (existingWeapon && !existingWeapon.isMaxLevel) {
       existingWeapon.levelUp();
       return;
     }
 
-    // New weapon via unified helper
+    // Pasif: hp_regen — her 5s'de 1 Can yenile (timer ekle)
+    if (choice === 'hp_regen') {
+      const count = this.player.passiveItems.filter(p => p === 'hp_regen').length;
+      if (count <= 1) { // İlk kez alındığında timer kur, ikinci kez daha fazla heal
+        this.time.addEvent({
+          delay: 5000,
+          loop: true,
+          callback: () => {
+            if (this.player?.isAlive) {
+              const healAmt = this.player.passiveItems.filter(p => p === 'hp_regen').length;
+              this.player.heal(healAmt);
+            }
+          }
+        });
+      }
+      return;
+    }
+
+    // Pasif: crit_up — GameScene'de critChance arttır
+    if (choice === 'crit_up') {
+      this.critChance = Math.min((this.critChance ?? 0.15) + 0.05, 0.40);
+      return;
+    }
+
+    // Pasif: dash_up — Player'daki DASH_COOLDOWN'ı azalt
+    if (choice === 'dash_up') {
+      (this.player as any).DASH_COOLDOWN = Math.max(800, ((this.player as any).DASH_COOLDOWN ?? 1500) * 0.80);
+      return;
+    }
+
+    // Diğer pasifler LevelUpScene içinde uygulandı; yeni silah ise ekle
     this.addWeaponById(choice);
   }
 
   private onWaveComplete(): void {
+    // BUG-3: Geçiş aktifse dalga tamamlama mantığını atla
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+
     // Wave-end heal: recover 10% max HP
     const healAmt = Math.floor(this.player.stats.maxHp * 0.10);
     const healed = Math.min(healAmt, this.player.stats.maxHp - this.player.currentHp);
@@ -734,6 +828,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.waveManager.isLastWave) {
       // Victory! Task 25: Save highscore
+      this.saveManager.clearRun(); // Zafer → run kaydını sil
       this.audioManager?.stopBGM();
       this.audioManager?.playVictory();
       const score = this.player.kills * 10 + this.waveManager.wave * 100;
@@ -768,11 +863,29 @@ export class GameScene extends Phaser.Scene {
         this.waveDamageTaken = 0;
         this.waveGoldEarned = 0;
 
+        // Devam kaydını güncelle (dalga bitti, shop öncesi kaydet)
+        const weaponLevels: Record<string, number> = {};
+        for (const w of this.weapons) { weaponLevels[w.data.id] = w.level; }
+        const runData: RunSaveData = {
+          characterId: this.characterId,
+          wave: completedWave,
+          playerLevel: this.player.level,
+          playerHp: this.player.currentHp,
+          playerStats: { ...this.player.stats },
+          passiveItems: [...this.player.passiveItems],
+          weaponIds: [...this.player.weaponIds],
+          weaponLevels,
+          gold: this.player.gold,
+          kills: this.player.kills
+        };
+        this.saveManager.saveRun(runData);
+
         // Open shop between waves
         this.scene.launch('ShopScene', {
           player: this.player,
           wave: completedWave,
           onDone: () => {
+            this.isTransitioning = false;
             this.scene.resume('GameScene');
             // A4: Show "WAVE X+1 STARTING!" then start wave after 1.5s
             this.showWaveStartingAnnouncement(nextWave, () => {
@@ -937,6 +1050,33 @@ export class GameScene extends Phaser.Scene {
       duration: 200,
       ease: 'Power1',
       onComplete: () => {
+        // P3-2: S rating — pulse + glow efekti
+        if (rating === 'S') {
+          this.tweens.add({
+            targets: ratingText,
+            scaleX: 1.25,
+            scaleY: 1.25,
+            duration: 180,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: 3
+          });
+          ratingText.setShadow(0, 0, '#ffee00', 18, true, true);
+        }
+        // P3-2: D rating — shake efekti
+        if (rating === 'D') {
+          const baseX = ratingText.x;
+          this.tweens.add({
+            targets: ratingText,
+            x: baseX + 6,
+            duration: 40,
+            ease: 'Linear',
+            yoyo: true,
+            repeat: 7,
+            onComplete: () => { ratingText.x = baseX; }
+          });
+        }
+
         // Hold for 2 seconds then fade out
         this.tweens.add({
           targets: elements,
@@ -1344,6 +1484,29 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** P3-1: Pool'dan bir ghost sprite al, animasyonla fade-out yap ve geri bırak */
+  private spawnAfterimage(x: number, y: number, flipX: boolean, alpha: number): void {
+    const ghost = this.afterimagePool.find(s => !s.active);
+    if (!ghost) return;
+    ghost.setPosition(x, y);
+    ghost.setFlipX(flipX);
+    ghost.setAlpha(alpha);
+    ghost.setScale(1);
+    ghost.setTint(0x4488ff);
+    ghost.setActive(true).setVisible(true);
+    this.tweens.add({
+      targets: ghost,
+      alpha: 0,
+      scaleX: 0.6,
+      scaleY: 0.6,
+      duration: 220,
+      ease: 'Power2',
+      onComplete: () => {
+        ghost.setActive(false).setVisible(false);
+      }
+    });
+  }
+
   private getDifficultyMultipliers(difficulty: string): { enemyHpMult: number; enemyDamageMult: number; playerDamageMult: number } {
     switch (difficulty) {
       case 'easy': return { enemyHpMult: 0.7, enemyDamageMult: 0.5, playerDamageMult: 1.5 };
@@ -1414,6 +1577,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private gameOver(): void {
+    this.saveManager.clearRun(); // Yenilgi → run kaydını sil
     this.audioManager?.stopBGM();
     // Task 25: Save highscore
     const score = this.player.kills * 10 + this.waveManager.wave * 100;

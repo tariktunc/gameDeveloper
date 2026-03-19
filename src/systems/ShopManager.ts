@@ -100,7 +100,7 @@ export class ShopManager {
   private applyDynamicPricing(item: ShopItemData): ShopItemData {
     return {
       ...item,
-      cost: item.cost + this.currentWave * 2
+      cost: item.cost + this.currentWave * 5
     };
   }
 
@@ -134,7 +134,7 @@ export class ShopManager {
   reroll(playerGold: number): { offerings: ShopItemData[]; cost: number } | null {
     if (playerGold < this.rerollCost) return null;
     const cost = this.rerollCost;
-    this.rerollCost += 2;
+    this.rerollCost += 5;
     return { offerings: this.generateOfferings(), cost };
   }
 

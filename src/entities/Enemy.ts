@@ -99,12 +99,13 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     this.hpBar.clear();
     this.hpBar.setVisible(false);
 
-    // Set frame based on enemy type
-    this.setTexture('enemies', this.getFrameForType(data.id));
+    // Set frame based on enemy type (data.frame override or lookup)
+    const frame = data.frame !== undefined ? data.frame : this.getFrameForType(data.id);
+    this.setTexture('enemies', frame);
 
-    // Boss Necromancer: larger sprite
-    if (data.id === 'boss_necromancer') {
-      this.setScale(2);
+    // Bosses: larger sprite
+    if (data.isBoss) {
+      this.setScale(data.id === 'boss_sezer' ? 1.5 : 2);
     }
   }
 
@@ -115,7 +116,10 @@ export class Enemy extends Phaser.GameObjects.Sprite {
       vampire: 2,
       ghost: 3,
       boss_necromancer: 4,
-      archer: 5
+      archer: 5,
+      boss_sezer: 6,
+      boss_mumin: 7,
+      boss_tarik: 8
     };
     return frameMap[id] ?? 0;
   }
@@ -226,7 +230,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
 
     this.currentHp -= amount;
     this.flashUntil = this.scene.time.now + DAMAGE_FLASH_DURATION;
-    this.setTint(0xff3300); // kırmızı-turuncu hasar flash
+    const isNecroPhase2 = this.enemyData?.id === 'boss_necromancer' && this.currentHp / this.maxHp <= 0.5;
+    this.setTint(isNecroPhase2 ? 0xff0000 : 0xff3300); // Phase-2 Necromancer: saf kırmızı, diğerleri: turuncu-kırmızı
 
     if (this.currentHp <= 0) {
       // Disable collisions immediately but keep visible for death animation
@@ -255,10 +260,13 @@ export class Enemy extends Phaser.GameObjects.Sprite {
 
     const dt = _delta / 1000;
 
-    // Damage flash
+    // Damage flash — Necromancer phase-2 kırmızı tintini korur (BUG-9)
     if (time > this.flashUntil && this.flashUntil > 0) {
-      this.clearTint();
       this.flashUntil = 0;
+      const isNecroPhase2 = this.enemyData?.id === 'boss_necromancer' && this.currentHp / this.maxHp <= 0.5;
+      if (!isNecroPhase2) {
+        this.clearTint();
+      }
     }
 
     const id = this.enemyData.id;
@@ -492,7 +500,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
       const dy = this.lastTargetY - this.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist <= 350) {
+      if (dist <= 300) {
         this.archerShootTimer = 0;
         this.fireArcherProjectile();
       }

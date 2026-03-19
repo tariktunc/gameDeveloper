@@ -31,6 +31,7 @@ export interface EnemyData {
   xpValue: number;
   goldValue: number;
   spriteKey: string;
+  frame?: number;
   isBoss: boolean;
 }
 
@@ -68,6 +69,7 @@ export interface CharacterData {
   startingWeapon: string;
   baseStats: Stats;
   spriteKey: string;
+  bossRivalId: string;
 }
 
 export interface SaveData {
@@ -78,7 +80,11 @@ export interface SaveData {
   totalKills: number;
   totalRuns: number;
   difficulty: 'easy' | 'normal' | 'hard';
-  musicVolume: number; // 0.0 - 1.0
+  musicVolume: number;   // 0.0 - 1.0
+  sfxVolume: number;     // 0.0 - 1.0
+  showFps: boolean;
+  showDamageNumbers: boolean;
+  cameraShake: boolean;
 }
 
 export interface UpgradeOption {
@@ -87,4 +93,18 @@ export interface UpgradeOption {
   name: string;
   description: string;
   level?: number;
+}
+
+/** Devam kayıt verisi — mevcut run'u kaydeder/yükler */
+export interface RunSaveData {
+  characterId: string;
+  wave: number;          // kayıt anındaki tamamlanan dalga (devamda wave+1'den başlanır)
+  playerLevel: number;
+  playerHp: number;
+  playerStats: Stats;
+  passiveItems: string[];
+  weaponIds: string[];
+  weaponLevels: Record<string, number>; // id → level
+  gold: number;
+  kills: number;
 }

@@ -31,10 +31,10 @@ export const XP_THRESHOLDS = [
 // Wave
 export const WAVE_DURATION = 30_000; // 30s default (overridden by WaveManager per wave)
 export const WAVE_SPAWN_INTERVAL = 1500; // ms between spawns (base, overridden by WaveManager)
-export const WAVE_COUNT = 30;
+export const WAVE_COUNT = 10;
 
 // Shop
-export const SHOP_REROLL_COST = 5;
+export const SHOP_REROLL_COST = 10;
 
 // Combat
 export const DAMAGE_FLASH_DURATION = 100; // ms

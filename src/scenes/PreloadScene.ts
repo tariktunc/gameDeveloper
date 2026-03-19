@@ -14,13 +14,13 @@ export class PreloadScene extends Phaser.Scene {
 
     const bg = this.add.rectangle(x, y, barWidth, barHeight, 0x333333).setOrigin(0, 0.5);
     const fill = this.add.rectangle(x, y, 0, barHeight, 0x33ccff).setOrigin(0, 0.5);
-    const loadText = this.add.text(GAME_WIDTH / 2, y - 20, 'Loading...', {
+    const loadText = this.add.text(GAME_WIDTH / 2, y - 20, 'Yükleniyor...', {
       fontSize: '10px', color: '#ffffff', fontFamily: 'monospace'
     }).setOrigin(0.5);
 
     this.load.on('progress', (value: number) => {
       fill.width = barWidth * value;
-      loadText.setText(`Loading... ${Math.floor(value * 100)}%`);
+      loadText.setText(`Yükleniyor... ${Math.floor(value * 100)}%`);
     });
 
     this.load.on('complete', () => {
@@ -29,10 +29,27 @@ export class PreloadScene extends Phaser.Scene {
       loadText.destroy();
     });
 
-    // Try to load player image from file (optional – fallback to procedural if missing)
-    this.load.image('player-img', 'assets/sprites/player/tariktunc.png');
+    // Düşman görselleri
+    this.load.image('enemy-cambaz',  'sprites/enemies/cambaz.png');
+    this.load.image('enemy-katina',  'sprites/enemies/katina.png');
+    this.load.image('enemy-molamba', 'sprites/enemies/molamba.png');
+    this.load.image('enemy-bulsar',  'sprites/enemies/bulsar.png');
+    this.load.image('enemy-sezer',   'sprites/enemies/sezer.png');
+
+    // Tarık görselleri (6 adet png, arka plan kaldırılmış)
+    for (let i = 1; i <= 6; i++) {
+      this.load.image(`tarik-frame-${i}`, `sprites/player/tarik/${i}.png`);
+    }
+
+    // Mumin görselleri
+    this.load.image('mumin-idle', 'sprites/player/mumin/idle.png');
+    for (let i = 0; i <= 9; i++) {
+      this.load.image(`mumin-run-${i}`, `sprites/player/mumin/run/${i}.png`);
+      this.load.image(`mumin-die-${i}`, `sprites/player/mumin/die/${i}.png`);
+    }
+
     this.load.on('loaderror', () => {
-      // silently ignore; create() will use procedural fallback
+      // sessizce yoksay; create() prosedürel fallback kullanır
     });
 
     this.generatePlaceholderAssets();
@@ -51,120 +68,153 @@ export class PreloadScene extends Phaser.Scene {
     return canvas;
   }
 
-  private generatePlayerSpritesheet(): void {
-    // Generate a 4-frame spritesheet from the loaded player image
-    const source = this.textures.get('player-img').getSourceImage() as HTMLImageElement;
+  /** Görsel yüklendiyse canvas'a kopyala, yoksa renk bloku çiz */
+  private drawImageOrColor(
+    ctx: CanvasRenderingContext2D,
+    key: string,
+    dx: number, dy: number, dw: number, dh: number,
+    fallbackColor: string
+  ): void {
+    if (this.textures.exists(key)) {
+      const src = this.textures.get(key).getSourceImage() as HTMLImageElement;
+      ctx.drawImage(src, dx, dy, dw, dh);
+    } else {
+      ctx.fillStyle = fallbackColor;
+      ctx.fillRect(dx, dy, dw, dh);
+    }
+  }
+
+  /** Tarık spritesheet: 6 animasyon karesi, her biri 64×64 */
+  private generateTarikSpritesheet(): void {
+    const frameSize = 64;
+    const frameCount = 6;
+    const canvas = this.drawToCanvas(frameSize * frameCount, frameSize, (ctx) => {
+      for (let i = 1; i <= frameCount; i++) {
+        const key = `tarik-frame-${i}`;
+        this.drawImageOrColor(ctx, key, (i - 1) * frameSize, 0, frameSize, frameSize, '#3355ff');
+      }
+    });
+    if (this.textures.exists('player-tarik')) this.textures.remove('player-tarik');
+    this.textures.addSpriteSheet('player-tarik', canvas as any, { frameWidth: frameSize, frameHeight: frameSize });
+  }
+
+  /** Mumin spritesheet: 10 run karesi + 10 die karesi = 20 kare, 64×64 */
+  private generateMuminSpritesheet(): void {
+    const frameSize = 64;
+    const totalFrames = 20; // 0-9: run, 10-19: die
+    const canvas = this.drawToCanvas(frameSize * totalFrames, frameSize, (ctx) => {
+      // Run frames (0-9)
+      for (let i = 0; i <= 9; i++) {
+        const key = `mumin-run-${i}`;
+        this.drawImageOrColor(ctx, key, i * frameSize, 0, frameSize, frameSize, '#cc4411');
+      }
+      // Die frames (10-19)
+      for (let i = 0; i <= 9; i++) {
+        const key = `mumin-die-${i}`;
+        this.drawImageOrColor(ctx, key, (10 + i) * frameSize, 0, frameSize, frameSize, '#661100');
+      }
+    });
+    if (this.textures.exists('player-mumin')) this.textures.remove('player-mumin');
+    this.textures.addSpriteSheet('player-mumin', canvas as any, { frameWidth: frameSize, frameHeight: frameSize });
+  }
+
+  /** Düşman spritesheet: 9 slot × 48×48 */
+  private generateEnemySpritesheet(): void {
     const frameSize = 48;
-    const playerCanvas = this.drawToCanvas(frameSize * 4, frameSize, (ctx) => {
-      for (let i = 0; i < 4; i++) {
-        const ox = i * frameSize;
-        // Draw the character image scaled to frame size
-        ctx.drawImage(source, ox + 4, 2, frameSize - 8, frameSize - 4);
-        // Walk animation: slight vertical offset on frames 1 and 3
-        if (i === 1) {
-          ctx.clearRect(ox, 0, frameSize, frameSize);
-          ctx.drawImage(source, ox + 4, 0, frameSize - 8, frameSize - 4);
-        } else if (i === 3) {
-          ctx.clearRect(ox, 0, frameSize, frameSize);
-          ctx.drawImage(source, ox + 4, 4, frameSize - 8, frameSize - 4);
+    // slot → yüklü texture key
+    const imageSlots: Record<number, string> = {
+      1: 'enemy-cambaz',   // Yarasa
+      2: 'enemy-molamba',  // Vampir
+      3: 'enemy-katina',   // Hayalet
+      5: 'enemy-bulsar',   // Okçu
+      6: 'enemy-sezer',    // Sezer mini boss
+      7: 'enemy-sezer',    // Mumin boss (sezer görsel kullan)
+      8: 'enemy-sezer',    // Tarık boss (sezer görsel kullan)
+    };
+
+    const totalSlots = 9;
+    const canvas = this.drawToCanvas(frameSize * totalSlots, frameSize, (ctx) => {
+      for (let slot = 0; slot < totalSlots; slot++) {
+        const ox = slot * frameSize;
+        const imgKey = imageSlots[slot];
+
+        if (imgKey && this.textures.exists(imgKey)) {
+          const source = this.textures.get(imgKey).getSourceImage() as HTMLImageElement;
+          ctx.drawImage(source, ox, 0, frameSize, frameSize);
+        } else {
+          this.drawProceduralEnemyFrame(ctx, slot, ox, frameSize);
         }
       }
     });
-    this.textures.addSpriteSheet('player', playerCanvas as any, { frameWidth: frameSize, frameHeight: frameSize });
+
+    if (this.textures.exists('enemies')) this.textures.remove('enemies');
+    this.textures.addSpriteSheet('enemies', canvas as any, { frameWidth: frameSize, frameHeight: frameSize });
+  }
+
+  private drawProceduralEnemyFrame(
+    ctx: CanvasRenderingContext2D, type: number, ox: number, size: number
+  ): void {
+    const s = size / 32; // 1.5x scale
+    switch (type) {
+      case 0: // İskelet
+        ctx.fillStyle = '#bbbbbb';
+        ctx.fillRect(ox + 12*s, 4*s,  8*s, 7*s);
+        ctx.fillRect(ox + 13*s, 11*s, 6*s, 9*s);
+        ctx.fillRect(ox + 10*s, 20*s, 4*s, 8*s);
+        ctx.fillRect(ox + 18*s, 20*s, 4*s, 8*s);
+        ctx.fillRect(ox + 7*s,  12*s, 5*s, 2*s);
+        ctx.fillRect(ox + 20*s, 12*s, 5*s, 2*s);
+        ctx.fillStyle = '#ff2200';
+        ctx.fillRect(ox + 14*s, 7*s, 2*s, 2*s);
+        ctx.fillRect(ox + 17*s, 7*s, 2*s, 2*s);
+        break;
+      case 4: // Necromancer Boss
+        ctx.fillStyle = '#7700bb';
+        ctx.fillRect(ox + 8*s,  6*s,  16*s, 10*s);
+        ctx.fillRect(ox + 6*s,  16*s, 20*s, 14*s);
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(ox + 8*s,  2*s, 4*s, 6*s);
+        ctx.fillRect(ox + 14*s, 0,   4*s, 8*s);
+        ctx.fillRect(ox + 20*s, 2*s, 4*s, 6*s);
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(ox + 11*s, 10*s, 3*s, 3*s);
+        ctx.fillRect(ox + 18*s, 10*s, 3*s, 3*s);
+        ctx.fillStyle = '#cc44ff';
+        ctx.fillRect(ox + 4*s,  18*s, 3*s, 10*s);
+        ctx.fillRect(ox + 25*s, 18*s, 3*s, 10*s);
+        break;
+      default:
+        ctx.fillStyle = '#444444';
+        ctx.fillRect(ox + 8*s, 4*s, 16*s, 24*s);
+        break;
+    }
   }
 
   private generatePlaceholderAssets(): void {
-
-    // Enemies spritesheet (32x32, 6 types) — her düşman farklı silüet
-    // 0=skeleton 1=bat 2=vampire 3=ghost 4=boss 5=archer
+    // Enemies spritesheet oluşturmak için önce placeholder yükle
     const enemyCanvas = this.drawToCanvas(192, 32, (ctx) => {
-
-      // 0: Skeleton — ince kemik figür, gri
+      // 0: Skeleton
       { const ox = 0;
         ctx.fillStyle = '#bbbbbb';
-        ctx.fillRect(ox+12,4,8,7);    // kafa
-        ctx.fillRect(ox+13,11,6,9);   // gövde
-        ctx.fillRect(ox+10,20,4,8);   // sol bacak
-        ctx.fillRect(ox+18,20,4,8);   // sağ bacak
-        ctx.fillRect(ox+7,12,5,2);    // sol kol
-        ctx.fillRect(ox+20,12,5,2);   // sağ kol
+        ctx.fillRect(ox+12,4,8,7);
+        ctx.fillRect(ox+13,11,6,9);
+        ctx.fillRect(ox+10,20,4,8);
+        ctx.fillRect(ox+18,20,4,8);
+        ctx.fillRect(ox+7,12,5,2);
+        ctx.fillRect(ox+20,12,5,2);
         ctx.fillStyle = '#ff2200';
-        ctx.fillRect(ox+14,7,2,2); ctx.fillRect(ox+17,7,2,2); // gözler
-      }
-
-      // 1: Bat — kanat silueti, kahverengi
-      { const ox = 32;
-        ctx.fillStyle = '#774422';
-        ctx.fillRect(ox+11,12,10,8);  // gövde
-        ctx.fillRect(ox+4,8,8,7);     // sol kanat
-        ctx.fillRect(ox+20,8,8,7);    // sağ kanat
-        ctx.fillRect(ox+13,20,3,4);   // ayak
-        ctx.fillRect(ox+16,20,3,4);
-        ctx.fillStyle = '#ff4400';
-        ctx.fillRect(ox+13,13,2,2); ctx.fillRect(ox+17,13,2,2);
-      }
-
-      // 2: Vampire — pelerin, kırmızı
-      { const ox = 64;
-        ctx.fillStyle = '#cc1111';
-        ctx.fillRect(ox+11,4,10,8);   // kafa
-        ctx.fillRect(ox+9,12,14,12);  // pelerin gövde
-        ctx.fillRect(ox+6,14,4,8);    // sol pelerin
-        ctx.fillRect(ox+22,14,4,8);   // sağ pelerin
-        ctx.fillStyle = '#ff9999';
-        ctx.fillRect(ox+13,8,2,2); ctx.fillRect(ox+17,8,2,2);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(ox+13,11,2,2); ctx.fillRect(ox+17,11,2,2); // dişler
-      }
-
-      // 3: Ghost — bulanık oval, mavi
-      { const ox = 96;
-        ctx.globalAlpha = 0.85;
-        ctx.fillStyle = '#5566ee';
-        ctx.beginPath();
-        ctx.ellipse(ox+16,13,9,11,0,0,Math.PI*2); ctx.fill();
-        ctx.fillRect(ox+7,18,4,6);
-        ctx.fillRect(ox+12,20,4,6);
-        ctx.fillRect(ox+17,20,4,6);
-        ctx.fillRect(ox+22,18,4,6);
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(ox+12,10,3,3); ctx.fillRect(ox+17,10,3,3);
-      }
-
-      // 4: Boss Necromancer — büyük koyu mor, taç
-      { const ox = 128;
-        ctx.fillStyle = '#7700bb';
-        ctx.fillRect(ox+8,6,16,10);   // kafa
-        ctx.fillRect(ox+6,16,20,14);  // gövde
-        ctx.fillStyle = '#ffcc00';
-        ctx.fillRect(ox+8,2,4,6); ctx.fillRect(ox+14,0,4,8); ctx.fillRect(ox+20,2,4,6); // taç
-        ctx.fillStyle = '#ff0000';
-        ctx.fillRect(ox+11,10,3,3); ctx.fillRect(ox+18,10,3,3);
-        ctx.fillStyle = '#cc44ff';
-        ctx.fillRect(ox+4,18,3,10); ctx.fillRect(ox+25,18,3,10); // kollar
-      }
-
-      // 5: Archer — yeşil, ok+yay
-      { const ox = 160;
-        ctx.fillStyle = '#336622';
-        ctx.fillRect(ox+12,4,8,8);    // kafa
-        ctx.fillRect(ox+11,12,10,10); // gövde
-        ctx.fillRect(ox+12,22,4,8);   // bacaklar
-        ctx.fillRect(ox+16,22,4,8);
-        ctx.fillStyle = '#885533';
-        ctx.fillRect(ox+6,10,2,14);   // yay
-        ctx.fillRect(ox+6,10,6,2); ctx.fillRect(ox+6,22,6,2);
-        ctx.fillStyle = '#ccaa44';
-        ctx.fillRect(ox+8,15,12,2);   // ok
-        ctx.fillRect(ox+19,13,2,6);   // ok ucu
-        ctx.fillStyle = '#ff3300';
         ctx.fillRect(ox+14,7,2,2); ctx.fillRect(ox+17,7,2,2);
       }
+      // 1-5: diğer tipler basit renk blokları
+      { ctx.fillStyle = '#774422'; ctx.fillRect(32+11,12,10,8); ctx.fillRect(32+4,8,8,7); ctx.fillRect(32+20,8,8,7); }
+      { ctx.fillStyle = '#cc1111'; ctx.fillRect(64+11,4,10,8); ctx.fillRect(64+9,12,14,12); }
+      { ctx.fillStyle = '#5566ee'; ctx.fillRect(96+7,6,18,22); }
+      { ctx.fillStyle = '#7700bb'; ctx.fillRect(128+8,6,16,24); ctx.fillStyle='#ffcc00'; ctx.fillRect(128+8,2,4,6); ctx.fillRect(128+14,0,4,8); ctx.fillRect(128+20,2,4,6); }
+      { ctx.fillStyle = '#336622'; ctx.fillRect(160+12,4,8,8); ctx.fillRect(160+11,12,10,10); }
     });
     this.textures.addSpriteSheet('enemies', enemyCanvas as any, { frameWidth: 32, frameHeight: 32 });
 
-    // Projectiles spritesheet (8x8, 4 types) via canvas
+    // Projectiles spritesheet (8x8, 4 types)
     const projColors = ['#ffffff', '#ffcc00', '#00ff00', '#ff6600'];
     const projCanvas = this.drawToCanvas(32, 8, (ctx) => {
       for (let i = 0; i < 4; i++) {
@@ -176,7 +226,7 @@ export class PreloadScene extends Phaser.Scene {
     });
     this.textures.addSpriteSheet('projectiles', projCanvas as any, { frameWidth: 8, frameHeight: 8 });
 
-    // XP Gem (8x8 single image)
+    // XP Gem (8x8)
     const gemCanvas = this.drawToCanvas(8, 8, (ctx) => {
       ctx.fillStyle = '#33ff33';
       ctx.beginPath();
@@ -205,54 +255,60 @@ export class PreloadScene extends Phaser.Scene {
     this.textures.addImage('arena-tile', tileCanvas as any);
   }
 
-  private generateProceduralPlayerSprite(): void {
-    const frameSize = 48;
-    const playerCanvas = this.drawToCanvas(frameSize * 4, frameSize, (ctx) => {
-      for (let i = 0; i < 4; i++) {
-        const ox = i * frameSize;
-        const bobY = (i === 1 || i === 3) ? -4 : 4;
-        // Body
-        ctx.fillStyle = '#3355ff';
-        ctx.fillRect(ox + 14, 20 + bobY, 20, 20);
-        // Head
-        ctx.fillStyle = '#ffcc99';
-        ctx.fillRect(ox + 16, 8 + bobY, 16, 14);
-        // Eyes
-        ctx.fillStyle = '#ff3333';
-        ctx.fillRect(ox + 19, 13 + bobY, 3, 3);
-        ctx.fillRect(ox + 26, 13 + bobY, 3, 3);
-        // Legs
-        ctx.fillStyle = '#222255';
-        ctx.fillRect(ox + 15, 38 + bobY, 8, 8);
-        ctx.fillRect(ox + 25, 38 + bobY, 8, 8);
-      }
-    });
-    this.textures.addSpriteSheet('player', playerCanvas as any, { frameWidth: frameSize, frameHeight: frameSize });
-  }
-
   create(): void {
-    // Build 'player' spritesheet: use loaded image if available, else procedural
-    if (this.textures.exists('player-img')) {
-      try {
-        this.generatePlayerSpritesheet();
-      } catch {
-        this.generateProceduralPlayerSprite();
-      }
-    } else {
-      this.generateProceduralPlayerSprite();
-    }
+    // Tarık spritesheet oluştur
+    this.generateTarikSpritesheet();
 
-    // Create player animations using spritesheet frames
+    // Mumin spritesheet oluştur
+    this.generateMuminSpritesheet();
+
+    // Düşman spritesheet: gerçek görselleri yerleştir
+    this.generateEnemySpritesheet();
+
+    // Tarık animasyonları (6 kare döngü = yürüme, ilk kare = durma)
     this.anims.create({
-      key: 'player_idle',
-      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 0 }),
+      key: 'tarik_idle',
+      frames: this.anims.generateFrameNumbers('player-tarik', { start: 0, end: 0 }),
       frameRate: 1,
       repeat: -1
     });
+    this.anims.create({
+      key: 'tarik_walk',
+      frames: this.anims.generateFrameNumbers('player-tarik', { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1
+    });
 
+    // Mumin animasyonları (frames 0-9: run, 10-19: die)
+    this.anims.create({
+      key: 'mumin_idle',
+      frames: this.anims.generateFrameNumbers('player-mumin', { start: 0, end: 0 }),
+      frameRate: 1,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'mumin_walk',
+      frames: this.anims.generateFrameNumbers('player-mumin', { start: 0, end: 9 }),
+      frameRate: 12,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'mumin_die',
+      frames: this.anims.generateFrameNumbers('player-mumin', { start: 10, end: 19 }),
+      frameRate: 10,
+      repeat: 0
+    });
+
+    // Geriye dönük uyumluluk: player_idle / player_walk de tanımla (fallback)
+    this.anims.create({
+      key: 'player_idle',
+      frames: this.anims.generateFrameNumbers('player-tarik', { start: 0, end: 0 }),
+      frameRate: 1,
+      repeat: -1
+    });
     this.anims.create({
       key: 'player_walk',
-      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+      frames: this.anims.generateFrameNumbers('player-tarik', { start: 0, end: 5 }),
       frameRate: 8,
       repeat: -1
     });

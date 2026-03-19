@@ -8,7 +8,7 @@ import { getSpawnPositionOutsideCamera, getSpawnPositionNearPlayer } from '../ut
 const ENEMY_DATA: Record<string, EnemyData> = {
   skeleton: {
     id: 'skeleton',
-    name: 'Skeleton',
+    name: 'İskelet',
     hp: 15,
     speed: 65,
     damage: 5,
@@ -19,7 +19,7 @@ const ENEMY_DATA: Record<string, EnemyData> = {
   },
   bat: {
     id: 'bat',
-    name: 'Bat',
+    name: 'Yarasa',
     hp: 8,
     speed: 95,
     damage: 3,
@@ -30,7 +30,7 @@ const ENEMY_DATA: Record<string, EnemyData> = {
   },
   vampire: {
     id: 'vampire',
-    name: 'Vampire',
+    name: 'Vampir',
     hp: 40,
     speed: 70,
     damage: 10,
@@ -41,7 +41,7 @@ const ENEMY_DATA: Record<string, EnemyData> = {
   },
   ghost: {
     id: 'ghost',
-    name: 'Ghost',
+    name: 'Hayalet',
     hp: 20,
     speed: 55,
     damage: 7,
@@ -52,7 +52,7 @@ const ENEMY_DATA: Record<string, EnemyData> = {
   },
   archer: {
     id: 'archer',
-    name: 'Dark Archer',
+    name: 'Karanlık Okçu',
     hp: 12,
     speed: 45,
     damage: 8,
@@ -63,13 +63,49 @@ const ENEMY_DATA: Record<string, EnemyData> = {
   },
   boss_necromancer: {
     id: 'boss_necromancer',
-    name: 'Necromancer',
+    name: 'Büyücü',
     hp: 500,
     speed: 20,
     damage: 25,
     xpValue: 50,
     goldValue: 80,
     spriteKey: 'enemies',
+    isBoss: true
+  },
+  boss_mumin: {
+    id: 'boss_mumin',
+    name: 'Mumin',
+    hp: 800,
+    speed: 55,
+    damage: 30,
+    xpValue: 80,
+    goldValue: 100,
+    spriteKey: 'enemies',
+    frame: 7,
+    isBoss: true
+  },
+  boss_tarik: {
+    id: 'boss_tarik',
+    name: 'Tarık',
+    hp: 800,
+    speed: 50,
+    damage: 35,
+    xpValue: 80,
+    goldValue: 100,
+    spriteKey: 'enemies',
+    frame: 8,
+    isBoss: true
+  },
+  boss_sezer: {
+    id: 'boss_sezer',
+    name: 'Sezer',
+    hp: 350,
+    speed: 70,
+    damage: 18,
+    xpValue: 30,
+    goldValue: 50,
+    spriteKey: 'enemies',
+    frame: 6,
     isBoss: true
   }
 };
@@ -88,6 +124,9 @@ export class WaveManager {
   private cameraX: number = 0;
   private cameraY: number = 0;
   public onWaveComplete?: () => void;
+  private rivalBossId: string = '';
+  private sezerSpawned: boolean = false;
+  private rivalBossSpawned: boolean = false;
 
   /** A2: Callback for spawn preview warnings – called 1s before enemies actually spawn */
   public onSpawnPreview?: (positions: { x: number; y: number }[]) => void;
@@ -100,22 +139,27 @@ export class WaveManager {
     this.difficultyDamageMult = difficultyDamageMult;
   }
 
+  setRivalBossId(id: string): void {
+    this.rivalBossId = id;
+  }
+
   startWave(waveNumber: number): void {
     this.currentWave = waveNumber;
     this.waveTimer = 0;
     this.spawnTimer = 0;
     this.waveActive = true;
     this.pendingSpawn = null;
+    this.sezerSpawned = false;
+    this.rivalBossSpawned = false;
   }
 
-  /** F1: Get wave duration based on wave number */
+  /** F1: Get wave duration — 10 level, her level ~2 dakika */
   getWaveDuration(): number {
     const wave = this.currentWave;
-    if (wave <= 3) return 20_000;       // Easy: 20s
-    if (wave <= 7) return 25_000;       // Medium: 25s
-    if (wave <= 12) return 30_000;      // Hard: 30s
-    if (wave <= 20) return 35_000;      // Very Hard: 35s
-    return 40_000;                       // Chaos: 40s
+    if (wave <= 2) return 90_000;       // İlk 2 level: 90s
+    if (wave <= 5) return 110_000;      // Level 3-5: 110s
+    if (wave <= 8) return 120_000;      // Level 6-8: 120s
+    return 130_000;                      // Son 2 level: 130s
   }
 
   /** F1/A1: Get current spawn interval based on wave tier and elapsed time */
@@ -210,11 +254,41 @@ export class WaveManager {
       this.prepareSpawn();
     }
 
-    if (this.waveTimer >= this.getWaveDuration()) {
+    // Sezer mini boss: dalganın %75'inde ortaya çıkar
+    const waveDuration = this.getWaveDuration();
+    if (!this.sezerSpawned && this.waveTimer >= waveDuration * 0.75) {
+      this.sezerSpawned = true;
+      this.spawnBossNearPlayer(ENEMY_DATA.boss_sezer);
+    }
+
+    // Rakip boss (Mumin veya Tarık): dalga 5 ve 10'da wave başında gelir
+    if (!this.rivalBossSpawned && this.rivalBossId &&
+        (this.currentWave === 5 || this.currentWave === 10) &&
+        this.waveTimer < 3000) {
+      this.rivalBossSpawned = true;
+      const rivalData = ENEMY_DATA[this.rivalBossId];
+      if (rivalData) this.spawnBossNearPlayer(rivalData);
+    }
+
+    if (this.waveTimer >= waveDuration) {
       this.waveActive = false;
       this.pendingSpawn = null;
       this.onWaveComplete?.();
     }
+  }
+
+  private spawnBossNearPlayer(bossData: EnemyData): void {
+    const boss = this.enemyPool.get();
+    if (!boss) return;
+    const pos = getSpawnPositionOutsideCamera(
+      this.cameraX, this.cameraY,
+      GAME_WIDTH, GAME_HEIGHT,
+      ARENA_WIDTH, ARENA_HEIGHT
+    );
+    const waveMultiplier = this.getWaveMultiplier();
+    const damageMultiplier = this.getDamageMultiplier();
+    const goldMultiplier = this.getGoldMultiplier();
+    boss.spawn(pos.x, pos.y, bossData, waveMultiplier, damageMultiplier, goldMultiplier);
   }
 
   /** A2: Pre-generate spawn positions, emit preview, then spawn after 1s delay */
@@ -228,19 +302,6 @@ export class WaveManager {
         180, 300,
         ARENA_WIDTH, ARENA_HEIGHT
       ));
-    }
-
-    // F1: Boss spawn every 5 waves; chaos mode gets multiple bosses
-    const isBossWave = this.currentWave % 5 === 0;
-    if (isBossWave && this.waveTimer < 2500) {
-      const bossCount = this.currentWave >= 21 ? 2 : 1; // Chaos: 2 bosses
-      for (let b = 0; b < bossCount; b++) {
-        positions.push(getSpawnPositionOutsideCamera(
-          this.cameraX, this.cameraY,
-          GAME_WIDTH, GAME_HEIGHT,
-          ARENA_WIDTH, ARENA_HEIGHT
-        ));
-      }
     }
 
     // Emit preview warning
@@ -269,9 +330,9 @@ export class WaveManager {
     return (1 + (this.currentWave - 1) * 0.05) * this.difficultyDamageMult;
   }
 
-  /** Gold multiplier: scales up with wave so late-game enemies reward more */
+  /** Gold multiplier: scales up with wave so late-game enemies reward more (max 3x cap) */
   private getGoldMultiplier(): number {
-    return 1 + (this.currentWave - 1) * 0.15; // wave 1=1×, wave 5=1.6×, wave 10=2.35×, wave 20=3.85×
+    return Math.min(1 + (this.currentWave - 1) * 0.20, 3.0); // wave 1=1×, wave 5=1.8×, wave 10=2.8×, cap=3×
   }
 
   /** Spawn enemies at pre-determined positions */
@@ -279,22 +340,8 @@ export class WaveManager {
     const waveMultiplier = this.getWaveMultiplier();
     const damageMultiplier = this.getDamageMultiplier();
     const goldMultiplier = this.getGoldMultiplier();
-    const isBossWave = this.currentWave % 5 === 0;
-    const spawnBoss = isBossWave && this.waveTimer < 3500;
-    const bossCount = this.currentWave >= 21 ? 2 : 1;
 
     for (let i = 0; i < positions.length; i++) {
-      // Last N positions are bosses if applicable
-      if (spawnBoss && i >= positions.length - bossCount) {
-        const boss = this.enemyPool.get();
-        if (boss) {
-          // Boss HP: wave 5=1×, wave 10=2×, wave 15=3×... max 7×
-        const bossHpMult = Math.min(1 + Math.floor(this.currentWave / 5) - 1, 6) * this.difficultyHpMult || this.difficultyHpMult;
-        boss.spawn(positions[i].x, positions[i].y, ENEMY_DATA.boss_necromancer, bossHpMult, damageMultiplier, goldMultiplier);
-        }
-        continue;
-      }
-
       const enemy = this.enemyPool.get();
       if (!enemy) break;
 

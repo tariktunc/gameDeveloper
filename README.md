@@ -2,7 +2,7 @@
 
 **Blakfy Studio** tarafından geliştirilmiş Vampire Survivors tarzı bir hayatta kalma oyunu.
 
-> 30 dalga boyunca düşmanları yen, güçlen, boss'ları yen — şafak sökmesin!
+> 10 level (~20 dakika) boyunca düşmanları yen, güçlen, boss'ları yen — şafak sökmesin!
 
 ---
 
@@ -31,19 +31,19 @@
 
 ### Oyun Döngüsü
 
-1. Karakter seç
-2. 30 dalga boyunca düşmanları yen
+1. Karakter seç (Tarık veya Mumin)
+2. 10 level (~20 dakika) boyunca düşmanları yen
 3. Dalgalar arasında dükkan açılır — altın ile item satın al
-4. Her 5. dalgada **Boss** (Nekromancı) çıkar
-5. 30. dalgayı tamamla → Zafer!
+4. Her level'in **%75'inde Sezer** (mini boss) çıkar
+5. Her level sonunda **rakip boss** çıkar — Tarık seçersen Mumin boss olarak gelir, Mumin seçersen Tarık gelir
+6. 10. leveli tamamla → Zafer!
 
 ### Karakterler
 
 | Karakter | Can | Hız | Pasif Yetenek |
 |----------|-----|-----|---------------|
-| **Antonio** | 100 | 220 | Her 20 öldürmede 5 can yeniler |
-| **Mortis** | 150 | 190 | %30 şansla yakına 3 hasar yansıtır |
-| **Fang** | 70 | 260 | Her öldürmede %25 şansla 2 can kazanır |
+| **Tarık** | 100 | 230 | Savaşçı Ruhu |
+| **Mumin** | 80 | 260 | Kan Emici |
 
 ### Zorluklar
 

@@ -85,12 +85,15 @@ export class CollisionSystem {
     if (!this.player.isAlive || this.player.isInvincible) return;
 
     // Contact damage check (spatial grid, nearby enemies only)
-    const nearby = this.enemyGrid.queryCircle(this.player.x, this.player.y, 20);
+    // Player sprite 2x scale → görsel boyut ~64px → yarıçap 32px
+    // Enemy sprite 1x scale → görsel boyut ~32px → yarıçap 16px
+    // Temas mesafesi (merkez-merkez): 32 + 16 = 48px → queryCircle en az 64px olmalı
+    const nearby = this.enemyGrid.queryCircle(this.player.x, this.player.y, 64);
     for (const enemy of nearby) {
       if (!enemy.active) continue;
 
       const distSqVal = distanceSq(this.player.x, this.player.y, enemy.x, enemy.y);
-      if (distSqVal < 14 * 14) { // slightly smaller collision for fairness
+      if (distSqVal < 44 * 44) { // player r=32 + enemy r=16 = 48, biraz örtüşme için 44
         const actualDamage = this.player.takeDamage(enemy.damage);
         if (actualDamage > 0) {
           enemy.onHitPlayer();
@@ -105,7 +108,7 @@ export class CollisionSystem {
       if (!enemy.active) continue;
 
       if (enemy.enemyData.id === 'boss_necromancer') {
-        const necroDmg = enemy.checkNecroProjectileHit(this.player.x, this.player.y, 14);
+        const necroDmg = enemy.checkNecroProjectileHit(this.player.x, this.player.y, 28);
         if (necroDmg > 0 && !this.player.isInvincible) {
           const actualDmg = this.player.takeDamage(necroDmg);
           if (actualDmg > 0) {
@@ -115,7 +118,7 @@ export class CollisionSystem {
       }
 
       if (enemy.enemyData.id === 'archer') {
-        const archerDmg = enemy.checkArcherProjectileHit(this.player.x, this.player.y, 14);
+        const archerDmg = enemy.checkArcherProjectileHit(this.player.x, this.player.y, 28);
         if (archerDmg > 0 && !this.player.isInvincible) {
           const actualDmg = this.player.takeDamage(archerDmg);
           if (actualDmg > 0) {

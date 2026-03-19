@@ -178,7 +178,7 @@ export class ShopScene extends Phaser.Scene {
         const stats = item.statModifiers;
         if (stats.maxHp) { this.player.stats.maxHp += stats.maxHp; this.player.currentHp += stats.maxHp; }
         if (stats.speed) this.player.stats.speed += stats.speed;
-        if (stats.damage) this.player.stats.damage += stats.damage;
+        if (stats.damage) this.player.stats.damage *= (1 + stats.damage);
         if (stats.attackSpeed) this.player.stats.attackSpeed += stats.attackSpeed;
         if (stats.armor) this.player.stats.armor += stats.armor;
         if (stats.pickupRange) this.player.stats.pickupRange += stats.pickupRange;

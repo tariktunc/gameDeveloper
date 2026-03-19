@@ -1,6 +1,7 @@
-import { SaveData } from '../utils/types';
+import { SaveData, RunSaveData } from '../utils/types';
 
 const SAVE_KEY = 'safak_yok_save';
+const RUN_SAVE_KEY = 'safak_yok_run';
 
 const DEFAULT_SAVE: SaveData = {
   gold: 0,
@@ -10,7 +11,11 @@ const DEFAULT_SAVE: SaveData = {
   totalKills: 0,
   totalRuns: 0,
   difficulty: 'normal',
-  musicVolume: 0.8
+  musicVolume: 0.8,
+  sfxVolume: 1.0,
+  showFps: false,
+  showDamageNumbers: true,
+  cameraShake: true
 };
 
 export class SaveManager {
@@ -88,5 +93,86 @@ export class SaveManager {
   setMusicVolume(volume: number): void {
     this.data.musicVolume = Math.max(0, Math.min(1, volume));
     this.save();
+  }
+
+  get sfxVolume(): number {
+    return this.data.sfxVolume ?? 1.0;
+  }
+
+  setSfxVolume(volume: number): void {
+    this.data.sfxVolume = Math.max(0, Math.min(1, volume));
+    this.save();
+  }
+
+  get showFps(): boolean {
+    return this.data.showFps ?? false;
+  }
+
+  setShowFps(value: boolean): void {
+    this.data.showFps = value;
+    this.save();
+  }
+
+  get showDamageNumbers(): boolean {
+    return this.data.showDamageNumbers ?? true;
+  }
+
+  setShowDamageNumbers(value: boolean): void {
+    this.data.showDamageNumbers = value;
+    this.save();
+  }
+
+  get cameraShake(): boolean {
+    return this.data.cameraShake ?? true;
+  }
+
+  setCameraShake(value: boolean): void {
+    this.data.cameraShake = value;
+    this.save();
+  }
+
+  resetProgress(): void {
+    this.data.highScore = 0;
+    this.data.totalKills = 0;
+    this.data.totalRuns = 0;
+    this.data.gold = 0;
+    this.data.unlockedCharacters = ['default'];
+    this.save();
+  }
+
+  // ── Run (devam) kayıt sistemi ──────────────────────────────────────────────
+
+  saveRun(run: RunSaveData): void {
+    try {
+      localStorage.setItem(RUN_SAVE_KEY, JSON.stringify(run));
+    } catch {
+      // ignore
+    }
+  }
+
+  loadRun(): RunSaveData | null {
+    try {
+      const raw = localStorage.getItem(RUN_SAVE_KEY);
+      if (raw) return JSON.parse(raw) as RunSaveData;
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  clearRun(): void {
+    try {
+      localStorage.removeItem(RUN_SAVE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
+  get hasRun(): boolean {
+    try {
+      return localStorage.getItem(RUN_SAVE_KEY) !== null;
+    } catch {
+      return false;
+    }
   }
 }

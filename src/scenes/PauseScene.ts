@@ -124,6 +124,8 @@ export class PauseScene extends Phaser.Scene {
     quitText.on('pointerover', () => quitText.setColor('#ffffff'));
     quitText.on('pointerout', () => quitText.setColor('#ff3333'));
     quitText.on('pointerdown', () => {
+      // BUG-5: Ana Menü'ye çıkmadan önce BGM'i durdur
+      audioManager?.stopBGM?.();
       this.scene.stop('GameScene');
       this.scene.start('MainMenuScene');
     });

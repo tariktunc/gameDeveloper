@@ -34,6 +34,16 @@ export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
+/** Tarafsız Fisher-Yates karıştırma algoritması */
+export function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 /** Oyuncuya yakın rastgele spawn pozisyonu (dalga başlangıcı için) */
 export function getSpawnPositionNearPlayer(
   playerX: number, playerY: number,

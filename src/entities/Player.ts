@@ -23,8 +23,11 @@ export class Player extends Phaser.GameObjects.Sprite {
   private readonly DASH_DISTANCE = 120;
   private readonly DASH_INVINCIBILITY = 200;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'player', 0);
+  public characterId: string = 'tarik';
+
+  constructor(scene: Phaser.Scene, x: number, y: number, spriteKey: string = 'player-tarik', characterId: string = 'tarik') {
+    super(scene, x, y, spriteKey, 0);
+    this.characterId = characterId;
     scene.add.existing(this);
 
     this.stats = {
@@ -59,13 +62,15 @@ export class Player extends Phaser.GameObjects.Sprite {
     }
 
     // Play walk animation if moving
+    const walkKey = `${this.characterId}_walk`;
+    const idleKey = `${this.characterId}_idle`;
     if (dx !== 0 || dy !== 0) {
-      if (this.anims.currentAnim?.key !== 'player_walk') {
-        this.play('player_walk', true);
+      if (this.anims.currentAnim?.key !== walkKey) {
+        this.play(walkKey, true);
       }
     } else {
-      if (this.anims.currentAnim?.key !== 'player_idle') {
-        this.play('player_idle', true);
+      if (this.anims.currentAnim?.key !== idleKey) {
+        this.play(idleKey, true);
       }
     }
   }

@@ -173,7 +173,7 @@ export class HUD {
     const bossBarX = GAME_WIDTH / 2 - bossBarW / 2;
     const bossBarY = GAME_HEIGHT - 60;
 
-    this.bossBarLabel = this.scene.add.text(GAME_WIDTH / 2, bossBarY - 14, 'BOSS', {
+    this.bossBarLabel = this.scene.add.text(GAME_WIDTH / 2, bossBarY - 14, 'PATRON', {
       fontSize: '11px', fontFamily: 'monospace', color: '#ff66cc', fontStyle: 'bold'
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(205).setVisible(false);
 

@@ -13,7 +13,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     const saveManager = new SaveManager();
 
     // Unlock prices per character (0 = free)
-    const unlockPrices: Record<string, number> = { antonio: 0, mortis: 50, fang: 100 };
+    const unlockPrices: Record<string, number> = { tarik: 0, mumin: 50 };
 
     // Background
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x0a0014);
@@ -142,15 +142,12 @@ export class CharacterSelectScene extends Phaser.Scene {
     backText.on('pointerout', () => backText.setColor('#666666'));
     backText.on('pointerdown', () => this.scene.start('MainMenuScene'));
 
-    // Keyboard shortcuts
+    // Klavye kısayolları
     this.input.keyboard?.on('keydown-ONE', () => {
       if (charData[0]) this.scene.start('GameScene', { characterId: charData[0].id });
     });
     this.input.keyboard?.on('keydown-TWO', () => {
       if (charData[1]) this.scene.start('GameScene', { characterId: charData[1].id });
-    });
-    this.input.keyboard?.on('keydown-THREE', () => {
-      if (charData[2]) this.scene.start('GameScene', { characterId: charData[2].id });
     });
     this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MainMenuScene'));
   }

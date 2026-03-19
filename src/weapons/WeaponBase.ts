@@ -56,8 +56,8 @@ export abstract class WeaponBase {
     this.data.damage *= 1.15;
     this.data.cooldown = Math.max(100, this.data.cooldown * 0.95);
     if (this.data.projectileCount) {
-      // Add extra projectile at level 3 and 5
-      if (this.level === 3 || this.level === 5) {
+      // Seviye 3, 5 ve 7'de ek mermi ekle (geç oyun platosunu önler)
+      if (this.level === 3 || this.level === 5 || this.level === 7) {
         this.data.projectileCount++;
       }
     }

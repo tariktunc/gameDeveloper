@@ -36,6 +36,8 @@ export default defineConfig({
   ],
   root,
   base: './',
+  // src/assets/ klasörü statik dosyalar için dist/'e kopyalanır
+  publicDir: resolve(root, 'assets'),
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,

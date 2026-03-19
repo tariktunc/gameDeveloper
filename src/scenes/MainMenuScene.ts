@@ -50,16 +50,22 @@ export class MainMenuScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'monospace', color: '#8866aa'
     }).setOrigin(0.5, 0.5);
 
-    // Start button
+    // Devam kaydı kontrolü
+    const saveManager = new SaveManager();
+    const hasRun = saveManager.hasRun;
+    const runData = hasRun ? saveManager.loadRun() : null;
+
+    // Buton Y pozisyonlarını devam kaydına göre ayarla
     const btnWidth = 300;
     const btnHeight = 50;
-    const btnY = 330;
+    const startBtnY = hasRun ? 290 : 330;
 
-    const btnBg = this.add.rectangle(GAME_WIDTH / 2, btnY, btnWidth, btnHeight, 0x2a1a3e)
+    // Start button
+    const btnBg = this.add.rectangle(GAME_WIDTH / 2, startBtnY, btnWidth, btnHeight, 0x2a1a3e)
       .setStrokeStyle(2, 0x6644aa)
       .setInteractive({ useHandCursor: true });
 
-    const startText = this.add.text(GAME_WIDTH / 2, btnY, '[ OYUNU BAŞLAT ]', {
+    const startText = this.add.text(GAME_WIDTH / 2, startBtnY, '[ YENİ OYUN ]', {
       fontSize: '20px', fontFamily: 'monospace', color: '#ffffff'
     }).setOrigin(0.5, 0.5);
 
@@ -79,12 +85,46 @@ export class MainMenuScene extends Phaser.Scene {
     });
     btnBg.on('pointerdown', startGame);
 
+    // Devam Et butonu (kayıt varsa)
+    if (hasRun && runData) {
+      const continueBtnY = startBtnY + 62;
+      const continueBg = this.add.rectangle(GAME_WIDTH / 2, continueBtnY, btnWidth, btnHeight, 0x0a2a1a)
+        .setStrokeStyle(2, 0x33cc66)
+        .setInteractive({ useHandCursor: true });
+
+      const characterName = runData.characterId === 'tarik' ? 'Tarık' : 'Mumin';
+      const continueText = this.add.text(GAME_WIDTH / 2, continueBtnY - 4,
+        `[ DEVAM ET ]`, {
+        fontSize: '20px', fontFamily: 'monospace', color: '#33ff88'
+      }).setOrigin(0.5, 0.5);
+
+      this.add.text(GAME_WIDTH / 2, continueBtnY + 12,
+        `${characterName} • Dalga ${runData.wave + 1}/${10}`, {
+        fontSize: '11px', fontFamily: 'monospace', color: '#559966'
+      }).setOrigin(0.5, 0.5);
+
+      continueBg.on('pointerover', () => {
+        continueText.setColor('#ffffff');
+        continueBg.setFillStyle(0x1a3a2a);
+        continueBg.setStrokeStyle(3, 0x55ff99);
+      });
+      continueBg.on('pointerout', () => {
+        continueText.setColor('#33ff88');
+        continueBg.setFillStyle(0x0a2a1a);
+        continueBg.setStrokeStyle(2, 0x33cc66);
+      });
+      continueBg.on('pointerdown', () => {
+        this.scene.start('GameScene', { characterId: runData.characterId, resumeRun: true });
+      });
+    }
+
     // Settings button
-    const settingsBtnBg = this.add.rectangle(GAME_WIDTH / 2, 400, 300, 50, 0x1a0a2e)
+    const settingsBtnY = hasRun ? 420 : 400;
+    const settingsBtnBg = this.add.rectangle(GAME_WIDTH / 2, settingsBtnY, 300, 50, 0x1a0a2e)
       .setStrokeStyle(2, 0x443366)
       .setInteractive({ useHandCursor: true });
 
-    const settingsText = this.add.text(GAME_WIDTH / 2, 400, '[ AYARLAR ]', {
+    const settingsText = this.add.text(GAME_WIDTH / 2, settingsBtnY, '[ AYARLAR ]', {
       fontSize: '20px', fontFamily: 'monospace', color: '#8866aa'
     }).setOrigin(0.5, 0.5);
 
@@ -100,21 +140,21 @@ export class MainMenuScene extends Phaser.Scene {
     });
     settingsBtnBg.on('pointerdown', () => this.scene.start('SettingsScene'));
 
-    // Controls info
-    this.add.text(GAME_WIDTH / 2, 472, 'WASD / Ok Tuşları ile Hareket', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#666666'
-    }).setOrigin(0.5, 0.5);
-
-    this.add.text(GAME_WIDTH / 2, 496, 'ENTER veya BOŞLUK ile başlat', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#666666'
-    }).setOrigin(0.5, 0.5);
+    // Controls info (sadece devam kaydı yoksa göster — alan kısıtlı)
+    if (!hasRun) {
+      this.add.text(GAME_WIDTH / 2, 472, 'WASD / Ok Tuşları ile Hareket', {
+        fontSize: '14px', fontFamily: 'monospace', color: '#666666'
+      }).setOrigin(0.5, 0.5);
+      this.add.text(GAME_WIDTH / 2, 496, 'ENTER veya BOŞLUK ile başlat', {
+        fontSize: '14px', fontFamily: 'monospace', color: '#666666'
+      }).setOrigin(0.5, 0.5);
+    }
 
     // Keyboard start
     this.input.keyboard?.once('keydown-ENTER', startGame);
     this.input.keyboard?.once('keydown-SPACE', startGame);
 
     // Task 25: Display high score and total kills from save data
-    const saveManager = new SaveManager();
     const saveData = saveManager.saveData;
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 75, `En Yüksek Skor: ${saveData.highScore}`, {
