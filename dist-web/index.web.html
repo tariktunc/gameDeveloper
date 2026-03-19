@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Zoom kapalı, tam ekran mobil, notch desteği -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0,
+        maximum-scale=1.0, minimum-scale=1.0, user-scalable=no,
+        viewport-fit=cover" />
+  <!-- PWA / tam ekran (ana ekrana ekle) -->
+  <meta name="apple-mobile-web-app-capable"          content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable"                content="yes" />
+  <meta name="theme-color"                           content="#000000" />
+  <title>Şafak Yok</title>
+
+  <style>
+    * {
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+
+    /*
+     * position: fixed → iOS Safari adres çubuğu kaybolunca boyut
+     * değişmesini önler; rubber-band scroll'u kaldırır.
+     * overscroll-behavior: none → Android Chrome pull-to-refresh'i kapatır.
+     */
+    html {
+      overscroll-behavior: none;
+      /* iOS fallback: gerçek görünür yükseklik */
+      height: -webkit-fill-available;
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: #000;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      /* Notch / Dynamic Island güvenli alan boşluğu */
+      padding: env(safe-area-inset-top)
+               env(safe-area-inset-right)
+               env(safe-area-inset-bottom)
+               env(safe-area-inset-left);
+    }
+
+    /*
+     * Tam ekran kap — address bar kaybolunca ya da döndürünce
+     * Phaser'ın scale manager'ı doğru boyut alır.
+     */
+    #game-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      display: block;
+      touch-action: none;
+      /* Piksel sanatı için bulanıklaştırmayı kapat */
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      /* Canvas'ı kap içinde ortala */
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* ── Portrait uyarısı ──────────────────────────────────────────── */
+    #rotate-warning {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0a0014;
+      color: #fff;
+      font-family: monospace;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 9999;
+    }
+
+    #rotate-warning .icon { font-size: 56px; }
+    #rotate-warning .main { font-size: 18px; color: #ffcc00; }
+    #rotate-warning .sub  { font-size: 13px; color: #666; }
+
+    /* Portrait modunda uyarıyı göster, oyunu gizle */
+    @media (orientation: portrait) {
+      #rotate-warning { display: flex; }
+      #game-container { display: none; }
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/index.web-HleEdw3w.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-DF2fYuay.js">
+  <link rel="modulepreload" crossorigin href="./assets/phaser-BHLF8zW2.js">
+</head>
+<body>
+
+  <!-- Portrait uyarısı -->
+  <div id="rotate-warning">
+    <div class="icon">📱 ↺</div>
+    <div class="main">Lütfen telefonunuzu yatay çevirin</div>
+    <div class="sub">Please rotate your device to landscape</div>
+  </div>
+
+  <div id="game-container"></div>
+
+
+  <!-- Otomatik yatay kilit: ilk dokunuşta fullscreen + landscape -->
+  <script>
+    function tryLandscape() {
+      const el = document.documentElement;
+      const doLock = () => {
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('landscape').catch(() => {});
+        }
+      };
+      if (el.requestFullscreen) {
+        el.requestFullscreen().then(doLock).catch(doLock);
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+        setTimeout(doLock, 300);
+      } else {
+        doLock();
+      }
+    }
+    // İlk etkileşimde bir kez çalıştır
+    ['touchstart', 'pointerdown', 'click'].forEach(evt => {
+      document.addEventListener(evt, tryLandscape, { once: true, passive: true });
+    });
+
+    // Ekran boyutu değişince (adres çubuğu vs) Phaser'ın yeniden ölçeklenmesini tetikle
+    window.addEventListener('resize', () => {
+      // Phaser kendi resize event'ini dinler; bu sadece iOS scroll bounce'u düzeltir
+      document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
+    });
+    document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
+  </script>
+</body>
+</html>
