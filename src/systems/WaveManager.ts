@@ -142,6 +142,7 @@ export class WaveManager {
   private rivalBossSpawned: boolean = false;
   private activeBoss: Enemy | null = null;       // Bölüm sonu bosu takibi
   private bossFightMode: boolean = false;        // Boss savaşı aktifken normal spawn durur
+  private sezerMode: boolean = false;            // Sezer karakteri oynuyor: spawn yavaş yavaş azalır
 
   /** A2: Callback for spawn preview warnings – called 1s before enemies actually spawn */
   public onSpawnPreview?: (positions: { x: number; y: number }[]) => void;
@@ -156,6 +157,10 @@ export class WaveManager {
 
   setRivalBossId(id: string): void {
     this.rivalBossId = id;
+  }
+
+  setSezerMode(enabled: boolean): void {
+    this.sezerMode = enabled;
   }
 
   startWave(waveNumber: number): void {
@@ -194,6 +199,14 @@ export class WaveManager {
       baseInterval = 800;         // Very Hard: fast
     } else {
       baseInterval = 500;         // Chaos: maximum spawn rate
+    }
+
+    // Sezer modu: zaman geçtikçe spawn yavaşlar (dalga sonunda tamamen durur)
+    if (this.sezerMode) {
+      // progress 0→1 arası: interval 1x → 8x artar; %80'den sonra spawn tamamen durur
+      if (progress >= 0.80) return 999999; // spawn durdur
+      const sezerMult = 1 + progress * 8.75; // kademeli artış
+      return baseInterval * sezerMult;
     }
 
     // Ramp within wave: spawn faster as wave progresses

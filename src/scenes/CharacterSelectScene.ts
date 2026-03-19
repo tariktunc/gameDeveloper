@@ -13,7 +13,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     const saveManager = new SaveManager();
 
     // Unlock prices per character (0 = free)
-    const unlockPrices: Record<string, number> = { tarik: 0, mumin: 50, orjinal: 100 };
+    const unlockPrices: Record<string, number> = { tarik: 0, mumin: 50, orjinal: 100, sezer: 150 };
 
     // Background
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x0a0014);
@@ -151,6 +151,13 @@ export class CharacterSelectScene extends Phaser.Scene {
     });
     this.input.keyboard?.on('keydown-THREE', () => {
       if (charData[2]) this.scene.start('GameScene', { characterId: charData[2].id });
+    });
+    this.input.keyboard?.on('keydown-FOUR', () => {
+      if (charData[3]) {
+        const price = unlockPrices[charData[3].id] ?? 0;
+        const unlocked = price === 0 || saveManager.saveData.unlockedCharacters.includes(charData[3].id);
+        if (unlocked) this.scene.start('GameScene', { characterId: charData[3].id });
+      }
     });
     this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MainMenuScene'));
   }

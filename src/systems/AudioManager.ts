@@ -229,6 +229,13 @@ export class AudioManager {
     this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
   }
 
+  /** Sezer müzik ses seviyesini ayarla (0-1 arası, masterGain'den bağımsız bir katman) */
+  setSezerMusicVolume(volume: number, sezerMusic: Phaser.Sound.BaseSound): void {
+    if (sezerMusic && (sezerMusic as Phaser.Sound.WebAudioSound).setVolume) {
+      (sezerMusic as Phaser.Sound.WebAudioSound).setVolume(Math.max(0, Math.min(1, volume)));
+    }
+  }
+
   // ─── SFX ────────────────────────────────────────────────────────────────────
 
   /** Bıçak fırlatma: kısa keskin "swish" */

@@ -72,6 +72,11 @@ export class GameScene extends Phaser.Scene {
   // P3-1: Dash afterimage object pool
   private afterimagePool: Phaser.GameObjects.Sprite[] = [];
 
+  // Sezer karakter müziği
+  private sezerMusic: Phaser.Sound.BaseSound | null = null;
+  private sezerMusicTargetVol: number = 0;
+  private readonly SEZER_MAX_VOLUME = 0.85;
+
   constructor() {
     super({ key: 'GameScene' });
   }
@@ -205,6 +210,10 @@ export class GameScene extends Phaser.Scene {
       this.waveManager.setRivalBossId(charData.bossRivalId);
     }
     this.waveManager.onRivalBossSpawn = (bossName) => this.showRivalBossAnnouncement(bossName);
+    // Sezer modu: spawn kademeli azalır
+    if (this.characterId === 'sezer') {
+      this.waveManager.setSezerMode(true);
+    }
     // Devam kayıdı varsa state'i geri yükle
     let startWave = 1;
     if (data?.resumeRun) {
@@ -284,11 +293,31 @@ export class GameScene extends Phaser.Scene {
     // Task 21 & 22: Audio (kaydedilmiş volume ile başlat)
     const volSave = new SaveManager();
     this.audioManager = new AudioManager(this, volSave.musicVolume);
-    this.audioManager.playBGM();
+
+    if (this.characterId === 'sezer' && this.cache.audio.has('sezer-theme')) {
+      // Sezer'e özel müzik: sessiz başla, tween ile yükselt
+      this.sezerMusic = this.sound.add('sezer-theme', { loop: true, volume: 0 });
+      this.sezerMusicTargetVol = this.SEZER_MAX_VOLUME;
+      this.sezerMusic.play();
+      // 3 saniyede yavaşça maksimum sese çık
+      this.tweens.add({
+        targets: this.sezerMusic,
+        volume: this.SEZER_MAX_VOLUME,
+        duration: 3000,
+        ease: 'Linear'
+      });
+    } else {
+      this.audioManager.playBGM();
+    }
 
     // BGM'i scene kapanınca durdur (üst üste binmeyi önle)
     this.events.once('shutdown', () => {
       this.audioManager?.stopBGM();
+      if (this.sezerMusic) {
+        this.sezerMusic.stop();
+        this.sezerMusic.destroy();
+        this.sezerMusic = null;
+      }
     }, this);
 
     // Task 25: SaveManager
@@ -681,6 +710,18 @@ export class GameScene extends Phaser.Scene {
 
     // 11. Minimap
     this.minimap.update();
+
+    // 12. Sezer müzik: HP azaldıkça ses düşer
+    if (this.sezerMusic && (this.sezerMusic as Phaser.Sound.WebAudioSound).isPlaying) {
+      const hpRatio = this.player.currentHp / this.player.stats.maxHp;
+      // %100 HP → SEZER_MAX_VOLUME, %0 HP → SEZER_MAX_VOLUME * 0.25
+      const targetVol = this.SEZER_MAX_VOLUME * (0.25 + hpRatio * 0.75);
+      const music = this.sezerMusic as Phaser.Sound.WebAudioSound;
+      const currentVol = music.volume;
+      // Smooth: lerp %5 per frame
+      const newVol = currentVol + (targetVol - currentVol) * 0.05;
+      music.setVolume(Math.max(0, newVol));
+    }
   }
 
   private onLevelUp(level: number): void {
@@ -839,6 +880,7 @@ export class GameScene extends Phaser.Scene {
       // Victory! Task 25: Save highscore
       this.saveManager.clearRun(); // Zafer → run kaydını sil
       this.audioManager?.stopBGM();
+      if (this.sezerMusic) { this.sezerMusic.stop(); }
       this.audioManager?.playVictory();
       const score = this.player.kills * 10 + this.waveManager.wave * 100;
       const previousHighScore = this.saveManager.saveData.highScore;
@@ -1644,6 +1686,7 @@ export class GameScene extends Phaser.Scene {
   private gameOver(): void {
     this.saveManager.clearRun(); // Yenilgi → run kaydını sil
     this.audioManager?.stopBGM();
+    if (this.sezerMusic) { this.sezerMusic.stop(); }
     // Task 25: Save highscore
     const score = this.player.kills * 10 + this.waveManager.wave * 100;
     const previousHighScore = this.saveManager.saveData.highScore;

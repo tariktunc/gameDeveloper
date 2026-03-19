@@ -52,5 +52,23 @@
       "luck": 1.0
     },
     "spriteKey": "player-orjinal"
+  },
+  {
+    "id": "sezer",
+    "name": "Sezer",
+    "description": "Efsanevi savaşçı. Kutsal Su ile başlar. Düşmanlar zamanla dağılır.",
+    "passive": "Hükümdar: Saha zamanla yalnız kalır; hasar ve hız en yüksek.",
+    "startingWeapon": "holy_water",
+    "bossRivalId": "boss_necromancer",
+    "baseStats": {
+      "maxHp": 160,
+      "speed": 270,
+      "damage": 1.6,
+      "attackSpeed": 1.4,
+      "armor": 2,
+      "pickupRange": 130,
+      "luck": 1.5
+    },
+    "spriteKey": "player-sezer"
   }
 ]

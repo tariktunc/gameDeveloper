@@ -60,6 +60,9 @@ export class PreloadScene extends Phaser.Scene {
     // Ok görseli (archer projectile)
     this.load.image('arrow', 'sprites/projectiles/arrow.png');
 
+    // Sezer karakter müziği
+    this.load.audio('sezer-theme', 'music/sezer-theme.m4a');
+
     this.load.on('loaderror', () => {
       // sessizce yoksay; create() prosedürel fallback kullanır
     });
@@ -186,6 +189,73 @@ export class PreloadScene extends Phaser.Scene {
     });
     if (this.textures.exists('player-mumin')) this.textures.remove('player-mumin');
     this.textures.addSpriteSheet('player-mumin', canvas as any, { frameWidth: frameSize, frameHeight: frameSize });
+  }
+
+  /** Sezer spritesheet: 6 kare, 64×64 — enemy-sezer görseli kafa olarak kullanılır */
+  private generateSezerSpritesheet(): void {
+    const frameSize = 64;
+    const frameCount = 6;
+    const canvas = this.drawToCanvas(frameSize * frameCount, frameSize, (ctx) => {
+      for (let i = 0; i < frameCount; i++) {
+        const ox = i * frameSize;
+        const s = frameSize / 64;
+
+        // Gövde — koyu kırmızı zırh (Sezer'e özgü renk)
+        ctx.fillStyle = '#5a0a0a';
+        ctx.fillRect(ox + 20*s, 28*s, 24*s, 20*s);
+
+        // Omuzlar
+        ctx.fillStyle = '#8a1a1a';
+        ctx.fillRect(ox + 14*s, 26*s, 10*s, 12*s);
+        ctx.fillRect(ox + 40*s, 26*s, 10*s, 12*s);
+
+        // Kollar
+        ctx.fillStyle = '#aa2a2a';
+        ctx.fillRect(ox + 12*s, 36*s, 8*s, 14*s);
+        ctx.fillRect(ox + 44*s, 36*s, 8*s, 14*s);
+
+        // Bacaklar (yürüyüş animasyonu)
+        const legOffset = [0, 3, 5, 3, 0, -3][i % 6];
+        ctx.fillStyle = '#3a0000';
+        ctx.fillRect(ox + 20*s, 48*s, 10*s, 14*s + legOffset*s);
+        ctx.fillRect(ox + 34*s, 48*s, 10*s, 14*s - legOffset*s);
+
+        // Ayakkabılar
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(ox + 18*s, (62 + legOffset)*s, 14*s, 2*s);
+        ctx.fillRect(ox + 32*s, (62 - legOffset)*s, 14*s, 2*s);
+
+        // Boyun
+        ctx.fillStyle = '#c8a080';
+        ctx.fillRect(ox + 28*s, 22*s, 8*s, 8*s);
+
+        // Kafa — enemy-sezer görseli daire şeklinde kırpılmış
+        const headSize = 36 * s;
+        const headX = ox + (frameSize / 2) - (headSize / 2);
+        const headY = 0;
+        if (this.textures.exists('enemy-sezer')) {
+          const src = this.textures.get('enemy-sezer').getSourceImage() as HTMLImageElement;
+          const srcW = src.naturalWidth || src.width;
+          const srcH = src.naturalHeight || src.height;
+          const cropSize = Math.min(srcW, srcH);
+          const cropX = (srcW - cropSize) / 2;
+          const cropY = (srcH - cropSize) / 2;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(headX + headSize / 2, headY + headSize / 2, headSize / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(src, cropX, cropY, cropSize, cropSize, headX, headY, headSize, headSize);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = '#c8a080';
+          ctx.beginPath();
+          ctx.arc(ox + frameSize / 2, headY + headSize / 2, headSize / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    });
+    if (this.textures.exists('player-sezer')) this.textures.remove('player-sezer');
+    this.textures.addSpriteSheet('player-sezer', canvas as any, { frameWidth: frameSize, frameHeight: frameSize });
   }
 
   /** Orjinal karakter spritesheet: run(0-9) + die(10-19) + shoot(20-29) + stand(30-39) = 40 kare, 64×64 */
@@ -363,6 +433,9 @@ export class PreloadScene extends Phaser.Scene {
     // Orjinal karakter spritesheet oluştur
     this.generateOrjinalSpritesheet();
 
+    // Sezer karakter spritesheet oluştur
+    this.generateSezerSpritesheet();
+
     // Düşman spritesheet: gerçek görselleri yerleştir
     this.generateEnemySpritesheet();
 
@@ -435,6 +508,26 @@ export class PreloadScene extends Phaser.Scene {
       key: 'orjinal_shoot',
       frames: this.anims.generateFrameNumbers('player-orjinal', { start: 20, end: 29 }),
       frameRate: 12,
+      repeat: 0
+    });
+
+    // Sezer animasyonları
+    this.anims.create({
+      key: 'sezer_idle',
+      frames: this.anims.generateFrameNumbers('player-sezer', { start: 0, end: 0 }),
+      frameRate: 1,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'sezer_walk',
+      frames: this.anims.generateFrameNumbers('player-sezer', { start: 0, end: 5 }),
+      frameRate: 8,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'sezer_die',
+      frames: this.anims.generateFrameNumbers('player-sezer', { start: 0, end: 5 }),
+      frameRate: 4,
       repeat: 0
     });
 
