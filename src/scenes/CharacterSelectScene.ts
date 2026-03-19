@@ -28,10 +28,16 @@ export class CharacterSelectScene extends Phaser.Scene {
       fontSize: '15px', fontFamily: 'monospace', color: '#ffcc00'
     }).setOrigin(0.5, 0.5);
 
-    const cardWidth = 250;
+    // Kart genişliğini karakter sayısına göre ayarla — ekranda taşmasın
+    const charCount = characters.length;
+    const minGap = 16;
+    const availableWidth = GAME_WIDTH - 40; // 20px kenar boşluğu her taraf
+    const cardWidth = Math.min(230, Math.floor((availableWidth - minGap * (charCount - 1)) / charCount));
+    const gap = charCount > 1
+      ? Math.floor((availableWidth - cardWidth * charCount) / (charCount - 1))
+      : 0;
     const cardHeight = 320;
-    const gap = 30;
-    const totalWidth = characters.length * cardWidth + (characters.length - 1) * gap;
+    const totalWidth = charCount * cardWidth + (charCount - 1) * gap;
     const startX = (GAME_WIDTH - totalWidth) / 2 + cardWidth / 2;
 
     const charData = characters as CharacterData[];

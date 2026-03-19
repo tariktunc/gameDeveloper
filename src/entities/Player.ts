@@ -94,6 +94,37 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.currentHp = Math.min(this.currentHp + amount, this.stats.maxHp);
   }
 
+  /**
+   * Pasif item etkisini uygula — stat değişiklikleri tek noktada.
+   * hp_regen / crit_up / dash_up scene-bağımlı olduğundan GameScene'de ele alınır.
+   */
+  applyPassive(id: string): void {
+    switch (id) {
+      case 'hp_up':
+        this.stats.maxHp += 25;
+        this.currentHp += 25;
+        break;
+      case 'speed_up':
+        this.stats.speed += 15;
+        break;
+      case 'damage_up':
+        this.stats.damage *= 1.1;
+        break;
+      case 'pickup_up':
+        this.stats.pickupRange += 20;
+        break;
+      case 'armor_up':
+        this.stats.armor += 1;
+        break;
+      case 'attack_speed_up':
+        this.stats.attackSpeed *= 1.08;
+        break;
+      case 'luck_up':
+        this.stats.luck *= 1.15;
+        break;
+    }
+  }
+
   setDefaultTint(tint: number): void {
     this.defaultTint = tint;
     this.setTint(tint);

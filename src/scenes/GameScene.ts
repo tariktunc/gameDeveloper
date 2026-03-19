@@ -336,7 +336,7 @@ export class GameScene extends Phaser.Scene {
     this.saveManager = new SaveManager();
 
     // P3-1: Afterimage pool — player oluşturulduktan sonra doldur
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       const s = this.add.sprite(0, 0, this.player.texture.key, 0);
       s.setActive(false).setVisible(false).setDepth(4);
       this.afterimagePool.push(s);

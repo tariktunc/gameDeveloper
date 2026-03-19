@@ -180,37 +180,8 @@ export class LevelUpScene extends Phaser.Scene {
       const player = gameScene?.player as Player | undefined;
       if (player) {
         player.passiveItems.push(option.id);
-        switch (option.id) {
-          case 'hp_up':
-            player.stats.maxHp += 25;
-            player.currentHp += 25;
-            break;
-          case 'speed_up':
-            player.stats.speed += 15;
-            break;
-          case 'damage_up':
-            player.stats.damage *= 1.1;
-            break;
-          case 'pickup_up':
-            player.stats.pickupRange += 20;
-            break;
-          case 'armor_up':
-            player.stats.armor += 1;
-            break;
-          case 'attack_speed_up':
-            player.stats.attackSpeed *= 1.08;
-            break;
-          case 'luck_up':
-            player.stats.luck *= 1.15;
-            break;
-          case 'hp_regen':
-            // hp_regen GameScene tarafından her 5s'de kontrol edilir
-            break;
-          case 'crit_up':
-          case 'dash_up':
-            // GameScene tarafından kullanılır
-            break;
-        }
+        // Stat değişiklikleri Player.applyPassive'de — hp_regen/crit_up/dash_up GameScene'de
+        player.applyPassive(option.id);
       }
     }
 
